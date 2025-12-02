@@ -20,7 +20,7 @@ Path("user_data/preferences").mkdir(parents=True, exist_ok=True)
 st.set_page_config(page_title="Word Search PDF Generator", layout="wide", page_icon="🔍")
 
 
-# Custom CSS (same as before)
+# Custom CSS
 st.markdown("""
 <style>
     .main-header {
@@ -123,7 +123,7 @@ st.markdown("**✨ Live Preview Mode - Changes apply instantly!**")
 st.markdown("---")
 
 
-# Initialize session state (rest of the code same as before...)
+# Initialize session state
 if 'last_config' not in st.session_state:
     st.session_state.last_config = None
 if 'pdf_bytes' not in st.session_state:
@@ -149,33 +149,6 @@ DEFAULT_COLORS = {
 for key, value in DEFAULT_COLORS.items():
     if key not in st.session_state:
         st.session_state[key] = value
-
-
-# Continue with rest of UI (tabs, etc.) - SAME AS BEFORE but add these features in Tab 0:
-
-
-
-# Initialize colors in session state (USER PREFERENCES - separate from config)
-if 'bg_color' not in st.session_state:
-    st.session_state.bg_color = DEFAULT_COLORS['bg_color']
-if 'border_color' not in st.session_state:
-    st.session_state.border_color = DEFAULT_COLORS['border_color']
-if 'page_num_color' not in st.session_state:
-    st.session_state.page_num_color = DEFAULT_COLORS['page_num_color']
-if 'page_num_text_color' not in st.session_state:
-    st.session_state.page_num_text_color = DEFAULT_COLORS['page_num_text_color']
-if 'title_color' not in st.session_state:
-    st.session_state.title_color = DEFAULT_COLORS['title_color']
-if 'letter_color' not in st.session_state:
-    st.session_state.letter_color = DEFAULT_COLORS['letter_color']
-if 'wb_bg_color' not in st.session_state:
-    st.session_state.wb_bg_color = DEFAULT_COLORS['wb_bg_color']
-if 'wb_border_color' not in st.session_state:
-    st.session_state.wb_border_color = DEFAULT_COLORS['wb_border_color']
-if 'grid_line_color' not in st.session_state:
-    st.session_state.grid_line_color = DEFAULT_COLORS['grid_line_color']
-if 'highlight_color' not in st.session_state:
-    st.session_state.highlight_color = DEFAULT_COLORS['highlight_color']
 
 
 # Main layout: Left for tabs, Right for preview
@@ -250,6 +223,73 @@ with left:
                 use_container_width=True,
                 key="download_btn"
             )
+        
+        st.markdown("---")
+        
+        # SAVE/LOAD BOOKS SECTION
+        st.subheader("📚 My Saved Books")
+        
+        # Save current configuration
+        book_name = st.text_input("Book Name", placeholder="My Awesome Book", key="book_name_input")
+        
+        col_save, col_colors = st.columns(2)
+        
+        with col_save:
+            if st.button("💾 Save Book", use_container_width=True, key="save_book_btn"):
+                if book_name:
+                    # We'll define current_config later, but save it here
+                    # This is a placeholder - actual config is created below
+                    try:
+                        user_prefs.save_book(book_name, st.session_state.get('current_config_snapshot', {}))
+                        user_prefs.save_current_colors()
+                        st.success(f"✅ Saved '{book_name}'!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    except:
+                        st.warning("Generate a PDF first before saving")
+                else:
+                    st.warning("Please enter a book name")
+        
+        with col_colors:
+            # Auto-save colors button
+            if st.button("💾 Save Colors", use_container_width=True, key="save_colors_btn"):
+                user_prefs.save_current_colors()
+                st.success("✅ Colors saved!")
+                time.sleep(0.5)
+        
+        # List saved books
+        saved_books = user_prefs.get_saved_books()
+        
+        if saved_books:
+            st.markdown("##### Your Saved Books:")
+            for book in saved_books:
+                col_book, col_actions = st.columns([3, 2])
+                
+                with col_book:
+                    st.write(f"📖 **{book['name']}**")
+                
+                with col_actions:
+                    col_load_btn, col_del_btn = st.columns(2)
+                    
+                    with col_load_btn:
+                        if st.button("📂", key=f"load_{book['name']}", help="Load book", use_container_width=True):
+                            loaded_config = user_prefs.load_book(book['name'])
+                            if loaded_config:
+                                # Apply loaded config to session state
+                                st.session_state.update(loaded_config)
+                                st.session_state.last_config = None
+                                st.success(f"✅ Loaded '{book['name']}'!")
+                                time.sleep(0.5)
+                                st.rerun()
+                    
+                    with col_del_btn:
+                        if st.button("🗑️", key=f"del_{book['name']}", help="Delete book", use_container_width=True):
+                            user_prefs.delete_book(book['name'])
+                            st.toast(f"🗑️ Deleted '{book['name']}'", icon="🗑️")
+                            time.sleep(0.5)
+                            st.rerun()
+        else:
+            st.info("No saved books yet. Create and save your first book!")
 
     # TAB 1: Page Design
     with tab1:
@@ -286,7 +326,6 @@ with left:
             page_num_height = st.slider("Box Height", 0.2, 0.6, 
                                           config.get('page_number', 'box_height'), 0.05)
             page_num_font_size = st.slider("Font Size", 12, 28, config.get('page_number', 'font_size'))
-
 
     # TAB 2: Typography
     with tab2:
@@ -334,7 +373,6 @@ with left:
             else:
                 font_path = config.get('general', 'font_path')
 
-
     # TAB 3: Word Box
     with tab3:
         st.subheader("📦 Word Box")
@@ -377,7 +415,6 @@ with left:
             min_words = st.slider("Min Words", 5, 30, 
                                   config.get('puzzle_generation', 'min_words_per_puzzle'))
 
-
     # TAB 4: Puzzle Grid
     with tab4:
         st.subheader("🔲 Puzzle Grid")
@@ -410,7 +447,6 @@ with left:
             st.markdown("##### Padding")
             end_padding = st.slider("End Padding", 0.0, 1.0, 
                                     config.get('solution', 'end_padding_factor'), 0.05)
-
 
     # TAB 5: Colors
     with tab5:
@@ -535,7 +571,6 @@ with left:
             
             highlight_color = st.color_picker("Highlight", st.session_state.highlight_color, key="highlight_color_picker")
             st.session_state.highlight_color = highlight_color
-
 
     # TAB 6: Images & Extras
     with tab6:
@@ -662,6 +697,9 @@ current_config = {
     "preserve_aspect": preserve_aspect,
 }
 
+# Save snapshot for book saving
+st.session_state.current_config_snapshot = current_config
+
 
 # Check for changes and regenerate
 config_changed = st.session_state.last_config != current_config
@@ -738,9 +776,6 @@ if live_mode and config_changed:
         config.data['general']['font_path'] = font_path
         config.data['general']['output_file'] = output_file
         
-        # DON'T save to config.json - keep user prefs separate
-        # config.save()  # COMMENTED OUT - this was saving your dev changes!
-        
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "src.generate_book"],
@@ -767,7 +802,6 @@ if live_mode and config_changed:
 with right:
     st.markdown("### 📄 Live PDF Preview")
     
-    # Browser compatibility note
     st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
     
     if st.session_state.pdf_bytes:
