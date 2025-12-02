@@ -6,18 +6,21 @@ from pathlib import Path
 import base64
 import time
 from config.config_loader import Config
+from auth import Auth, show_auth_page
+from user_preferences import UserPreferences
 
 
-# Ensure images and fonts folders exist
+# Ensure folders exist
 Path("images").mkdir(exist_ok=True)
 Path("fonts").mkdir(exist_ok=True)
+Path("user_data/preferences").mkdir(parents=True, exist_ok=True)
 
 
 # Page config
 st.set_page_config(page_title="Word Search PDF Generator", layout="wide", page_icon="🔍")
 
 
-# Custom CSS for better UI
+# Custom CSS (same as before)
 st.markdown("""
 <style>
     .main-header {
@@ -63,28 +66,71 @@ st.markdown("""
         color: white;
         text-align: center;
     }
+    .user-info {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 10px 20px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+
+# Initialize session state
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+if 'user_email' not in st.session_state:
+    st.session_state.user_email = None
+if 'user_name' not in st.session_state:
+    st.session_state.user_name = None
+
+
+# Check if user is logged in
+auth = Auth()
+if not auth.is_logged_in():
+    show_auth_page()
+    st.stop()
+
+
+# User is logged in - show main app
+user = auth.get_current_user()
+user_prefs = UserPreferences(user['email'])
+
+
+# Load user's saved colors on first load
+if 'colors_loaded' not in st.session_state:
+    user_prefs.load_colors_to_session()
+    st.session_state.colors_loaded = True
 
 
 # Load config
 config = Config("config/config.json")
 
 
-# Title
-st.markdown('<p class="main-header">🔍 Word Search PDF Generator PRO</p>', unsafe_allow_html=True)
+# Title with user info
+col_title, col_user = st.columns([3, 1])
+with col_title:
+    st.markdown('<p class="main-header">🔍 Word Search PDF Generator PRO</p>', unsafe_allow_html=True)
+with col_user:
+    st.markdown(f'<div class="user-info">👤 {user["name"]}<br/><small>{user["email"]}</small></div>', unsafe_allow_html=True)
+    if st.button("🚪 Logout", use_container_width=True, key="logout_btn"):
+        auth.logout()
+        st.rerun()
+
 st.markdown("**✨ Live Preview Mode - Changes apply instantly!**")
 st.markdown("---")
 
 
-# Initialize session state
+# Initialize session state (rest of the code same as before...)
 if 'last_config' not in st.session_state:
     st.session_state.last_config = None
 if 'pdf_bytes' not in st.session_state:
     st.session_state.pdf_bytes = None
 
 
-# DEFAULT VALUES (separate from config.json - these are ALWAYS the defaults)
+# DEFAULT VALUES
 DEFAULT_COLORS = {
     'bg_color': "#D9F0F8",
     'border_color': "#5A9CBD",
@@ -97,6 +143,16 @@ DEFAULT_COLORS = {
     'grid_line_color': "#BDD9F0",
     'highlight_color': "#7BBDE9",
 }
+
+
+# Initialize colors in session state
+for key, value in DEFAULT_COLORS.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+
+# Continue with rest of UI (tabs, etc.) - SAME AS BEFORE but add these features in Tab 0:
+
 
 
 # Initialize colors in session state (USER PREFERENCES - separate from config)
