@@ -30,14 +30,15 @@ st.markdown("""
         padding: 20px 0;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 4px;
         background: #3d256c;
         border-radius: 12px 12px 0 0;
         padding-left: 0.2em;
+        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
-        padding: 10px 20px;
+        padding: 8px 12px;
         background-color: #4d318b !important;
         color: #fff !important;
         border-radius: 10px 10px 0 0;
@@ -45,6 +46,8 @@ st.markdown("""
         font-family: 'Montserrat', sans-serif;
         transition: background 0.2s;
         opacity: 0.92;
+        font-size: 0.9rem;
+        white-space: nowrap;
     }
     .stTabs [aria-selected="true"] {
         background-color: #fff !important;
@@ -81,27 +84,42 @@ if 'pdf_bytes' not in st.session_state:
     st.session_state.pdf_bytes = None
 
 
-# Initialize colors in session state (IMPORTANT - do this BEFORE any widgets)
+# DEFAULT VALUES (separate from config.json - these are ALWAYS the defaults)
+DEFAULT_COLORS = {
+    'bg_color': "#D9F0F8",
+    'border_color': "#5A9CBD",
+    'page_num_color': "#3489B3",
+    'page_num_text_color': "#FFFFFF",
+    'title_color': "#3489B3",
+    'letter_color': "#1F3B4D",
+    'wb_bg_color': "#F0F8FB",
+    'wb_border_color': "#5A9CBD",
+    'grid_line_color': "#BDD9F0",
+    'highlight_color': "#7BBDE9",
+}
+
+
+# Initialize colors in session state (USER PREFERENCES - separate from config)
 if 'bg_color' not in st.session_state:
-    st.session_state.bg_color = "#D9F0F8"
+    st.session_state.bg_color = DEFAULT_COLORS['bg_color']
 if 'border_color' not in st.session_state:
-    st.session_state.border_color = "#5A9CBD"
+    st.session_state.border_color = DEFAULT_COLORS['border_color']
 if 'page_num_color' not in st.session_state:
-    st.session_state.page_num_color = "#3489B3"
+    st.session_state.page_num_color = DEFAULT_COLORS['page_num_color']
 if 'page_num_text_color' not in st.session_state:
-    st.session_state.page_num_text_color = "#FFFFFF"
+    st.session_state.page_num_text_color = DEFAULT_COLORS['page_num_text_color']
 if 'title_color' not in st.session_state:
-    st.session_state.title_color = "#3489B3"
+    st.session_state.title_color = DEFAULT_COLORS['title_color']
 if 'letter_color' not in st.session_state:
-    st.session_state.letter_color = "#1F3B4D"
+    st.session_state.letter_color = DEFAULT_COLORS['letter_color']
 if 'wb_bg_color' not in st.session_state:
-    st.session_state.wb_bg_color = "#F0F8FB"
+    st.session_state.wb_bg_color = DEFAULT_COLORS['wb_bg_color']
 if 'wb_border_color' not in st.session_state:
-    st.session_state.wb_border_color = "#5A9CBD"
+    st.session_state.wb_border_color = DEFAULT_COLORS['wb_border_color']
 if 'grid_line_color' not in st.session_state:
-    st.session_state.grid_line_color = "#BDD9F0"
+    st.session_state.grid_line_color = DEFAULT_COLORS['grid_line_color']
 if 'highlight_color' not in st.session_state:
-    st.session_state.highlight_color = "#7BBDE9"
+    st.session_state.highlight_color = DEFAULT_COLORS['highlight_color']
 
 
 # Main layout: Left for tabs, Right for preview
@@ -109,15 +127,15 @@ left, right = st.columns([2, 3], gap="large")
 
 
 with left:
-    # Create tabs with Quick Controls as first tab
+    # SHORTENED TAB NAMES (so they all fit on one line)
     tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "⚡ Quick Controls",
-        "📄 Page Design", 
-        "📝 Typography", 
-        "📦 Word Box", 
-        "🔲 Puzzle Grid",
+        "⚡ Controls",
+        "📄 Page", 
+        "📝 Text", 
+        "📦 Words", 
+        "🔲 Grid",
         "🎨 Colors",
-        "🖼️ Images & Extras"
+        "🖼️ Extras"
     ])
 
     # TAB 0: Quick Controls
@@ -149,9 +167,23 @@ with left:
         
         st.markdown("---")
         
-        if st.button("🔄 Force Regenerate", use_container_width=True, key="force_regen_btn"):
-            st.session_state.last_config = None
-            st.rerun()
+        # RESET BUTTON - Restores all defaults
+        col_a, col_b = st.columns(2)
+        
+        with col_a:
+            if st.button("🔄 Regenerate", use_container_width=True, key="force_regen_btn", type="primary"):
+                st.session_state.last_config = None
+                st.rerun()
+        
+        with col_b:
+            if st.button("♻️ Reset All", use_container_width=True, key="reset_btn", type="secondary"):
+                # Reset colors to defaults
+                for key, value in DEFAULT_COLORS.items():
+                    st.session_state[key] = value
+                # Clear last config to force regeneration
+                st.session_state.last_config = None
+                st.toast("✅ Reset to defaults!", icon="♻️")
+                st.rerun()
         
         if st.session_state.pdf_bytes:
             st.download_button(
@@ -165,18 +197,18 @@ with left:
 
     # TAB 1: Page Design
     with tab1:
-        st.subheader("📄 Page Layout & Structure")
+        st.subheader("📄 Page Layout")
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("##### Page Settings")
-            page_width = st.slider("Page Width (inches)", 7.0, 11.0, config.get('page', 'width'), 0.5)
-            page_height = st.slider("Page Height (inches)", 9.0, 14.0, config.get('page', 'height'), 0.5)
+            page_width = st.slider("Width (inches)", 7.0, 11.0, config.get('page', 'width'), 0.5)
+            page_height = st.slider("Height (inches)", 9.0, 14.0, config.get('page', 'height'), 0.5)
             margin = st.slider("Margin (inches)", 0.25, 1.0, config.get('page', 'margin'), 0.05)
             
         with col2:
-            st.markdown("##### Border Settings")
+            st.markdown("##### Border")
             border_width = st.slider("Border Width", 1, 10, config.get('page', 'border_width'))
             border_radius = st.slider("Border Radius", 0, 50, config.get('page', 'border_radius'))
             
@@ -185,31 +217,31 @@ with left:
         col3, col4 = st.columns(2)
         
         with col3:
-            st.markdown("##### Page Number Box")
+            st.markdown("##### Page Numbers")
             show_page_nums = st.checkbox("Show Page Numbers", config.get('page_number', 'show'))
-            page_num_position = st.slider("Position from Bottom (inches)", 0.1, 1.0, 
+            page_num_position = st.slider("Position from Bottom", 0.1, 1.0, 
                                            config.get('page_number', 'position_from_bottom'), 0.05)
             rounded_top_only = st.checkbox("Rounded Top Only", config.get('page_number', 'rounded_top_only'))
             
         with col4:
             st.markdown("##### Page Number Size")
-            page_num_width = st.slider("Box Width (inches)", 0.8, 2.0, 
+            page_num_width = st.slider("Box Width", 0.8, 2.0, 
                                          config.get('page_number', 'box_width'), 0.1)
-            page_num_height = st.slider("Box Height (inches)", 0.2, 0.6, 
+            page_num_height = st.slider("Box Height", 0.2, 0.6, 
                                           config.get('page_number', 'box_height'), 0.05)
             page_num_font_size = st.slider("Font Size", 12, 28, config.get('page_number', 'font_size'))
 
 
     # TAB 2: Typography
     with tab2:
-        st.subheader("📝 Typography & Text Styling")
+        st.subheader("📝 Typography")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("##### Title Settings")
-            title_size = st.slider("Title Font Size", 16, 50, config.get('title', 'font_size'))
-            title_position = st.slider("Title Position from Top (inches)", 0.5, 3.0, 
+            st.markdown("##### Title")
+            title_size = st.slider("Font Size", 16, 50, config.get('title', 'font_size'))
+            title_position = st.slider("Position from Top", 0.5, 3.0, 
                                          config.get('title', 'position_from_top'), 0.1)
             title_bold = st.checkbox("Bold Effect", config.get('title', 'bold_effect'))
             title_bold_offset = st.slider("Bold Thickness", 0.0, 2.0, 
@@ -217,56 +249,56 @@ with left:
         
         with col2:
             st.markdown("##### Solution Title")
-            solution_title_size = st.slider("Solution Title Size", 16, 50, 24)
-            solution_title_prefix = st.text_input("Solution Prefix", "SOLUTION")
+            solution_title_size = st.slider("Size", 16, 50, 24)
+            solution_title_prefix = st.text_input("Prefix", "SOLUTION")
         
         st.markdown("---")
         
         col3, col4 = st.columns(2)
         
         with col3:
-            st.markdown("##### Letter Font")
-            letter_font_factor = st.slider("Letter Size Factor", 0.3, 0.8, 
+            st.markdown("##### Letters")
+            letter_font_factor = st.slider("Size Factor", 0.3, 0.8, 
                                             config.get('puzzle_grid', 'letter_font_size_factor'), 0.05,
                                             help="Multiplier for cell size")
-            letter_v_offset = st.slider("Letter Vertical Offset", 0.0, 0.5, 
+            letter_v_offset = st.slider("Vertical Offset", 0.0, 0.5, 
                                           config.get('puzzle_grid', 'letter_vertical_offset'), 0.05)
         
         with col4:
-            st.markdown("##### Font Information")
-            st.info("📝 Current Font: Biski\n\n💡 Upload custom font below")
-            uploaded_font = st.file_uploader("Custom Font File (.ttf, .otf)", type=["ttf", "otf"], key="font_upload")
+            st.markdown("##### Font File")
+            st.info("📝 Current: Biski")
+            uploaded_font = st.file_uploader("Upload (.ttf, .otf)", type=["ttf", "otf"], key="font_upload")
             if uploaded_font is not None:
                 font_bytes = uploaded_font.read()
                 font_save_path = f"fonts/{uploaded_font.name}"
                 with open(font_save_path, "wb") as f:
                     f.write(font_bytes)
                 font_path = font_save_path
-                st.success(f"✅ Font saved: {uploaded_font.name}")
+                st.success(f"✅ {uploaded_font.name}")
             else:
                 font_path = config.get('general', 'font_path')
 
 
     # TAB 3: Word Box
     with tab3:
-        st.subheader("📦 Word Box Configuration")
+        st.subheader("📦 Word Box")
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("##### Layout")
-            wb_columns = st.slider("Number of Columns", 2, 8, config.get('word_box', 'columns'))
+            wb_columns = st.slider("Columns", 2, 8, config.get('word_box', 'columns'))
             wb_rows = st.slider("Rows per Column", 5, 20, config.get('word_box', 'rows_per_column'))
-            wb_position = st.slider("Position from Top (inches)", 1.0, 4.0, 
+            wb_position = st.slider("Position from Top", 1.0, 4.0, 
                                      config.get('word_box', 'position_from_top'), 0.1)
-            wb_height = st.slider("Box Height (inches)", 4.0, 10.0, 
+            wb_height = st.slider("Height", 4.0, 10.0, 
                                   config.get('word_box', 'height'), 0.1)
         
         with col2:
-            st.markdown("##### Spacing & Margins")
-            wb_margin_left = st.slider("Left Margin (inches)", 0.0, 1.0, 
+            st.markdown("##### Spacing")
+            wb_margin_left = st.slider("Left Margin", 0.0, 1.0, 
                                          config.get('word_box', 'margin_left'), 0.05)
-            wb_margin_right = st.slider("Right Margin (inches)", 0.0, 1.0, 
+            wb_margin_right = st.slider("Right Margin", 0.0, 1.0, 
                                           config.get('word_box', 'margin_right'), 0.05)
             wb_border_width = st.slider("Border Width", 1, 5, config.get('word_box', 'border_width'))
             wb_border_radius = st.slider("Border Radius", 0, 30, config.get('word_box', 'border_radius'))
@@ -276,7 +308,7 @@ with left:
         col3, col4 = st.columns(2)
         
         with col3:
-            st.markdown("##### Text Settings")
+            st.markdown("##### Text")
             wb_font_size = st.slider("Base Font Size", 8, 24, config.get('word_box', 'base_font_size'))
             wb_min_font = st.slider("Min Font Size", 6, 16, config.get('word_box', 'min_font_size'))
             
@@ -286,49 +318,49 @@ with left:
             wb_vertical_align = st.selectbox("Vertical Alignment", 
                                               ["center", "top", "bottom"],
                                               index=0 if config.get('word_box', 'vertical_align') == 'center' else 1)
-            min_words = st.slider("Min Words per Puzzle", 5, 30, 
+            min_words = st.slider("Min Words", 5, 30, 
                                   config.get('puzzle_generation', 'min_words_per_puzzle'))
 
 
     # TAB 4: Puzzle Grid
     with tab4:
-        st.subheader("🔲 Puzzle Grid Settings")
+        st.subheader("🔲 Puzzle Grid")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("##### Grid Layout")
-            grid_position = st.slider("Grid Position from Top (inches)", 0.5, 4.0, 
+            st.markdown("##### Layout")
+            grid_position = st.slider("Position from Top", 0.5, 4.0, 
                                        config.get('puzzle_grid', 'position_from_top'), 0.1)
-            grid_line_width = st.slider("Grid Line Width", 1, 5, 
+            grid_line_width = st.slider("Line Width", 1, 5, 
                                          config.get('puzzle_grid', 'grid_line_width'))
         
         with col2:
             st.markdown("##### Cell Settings")
-            st.info(f"Current grid: {grid_size}x{grid_size}")
-            st.info("Cell size adjusts automatically")
+            st.info(f"Grid: {grid_size}×{grid_size}")
+            st.info("Cell size: Auto")
         
         st.markdown("---")
         
         col3, col4 = st.columns(2)
         
         with col3:
-            st.markdown("##### Solution Overlay")
+            st.markdown("##### Solution")
             show_solutions = st.checkbox("Include Solutions", config.get('solution', 'show_solutions'))
-            highlight_thickness = st.slider("Highlight Thickness Factor", 0.3, 1.5, 
+            highlight_thickness = st.slider("Thickness", 0.3, 1.5, 
                                             config.get('solution', 'thickness_factor'), 0.05)
             
         with col4:
-            st.markdown("##### Highlight Padding")
-            end_padding = st.slider("End Padding Factor", 0.0, 1.0, 
+            st.markdown("##### Padding")
+            end_padding = st.slider("End Padding", 0.0, 1.0, 
                                     config.get('solution', 'end_padding_factor'), 0.05)
 
 
-    # TAB 5: Colors (COMPLETELY REDONE)
+    # TAB 5: Colors
     with tab5:
         st.subheader("🎨 Color Palette")
         
-        # Preset buttons FIRST (before color pickers)
+        # Preset buttons FIRST
         st.markdown("##### 🎨 Quick Presets")
         col_presets = st.columns(5)
         
@@ -409,11 +441,11 @@ with left:
         
         st.markdown("---")
         
-        # Color pickers read directly from session state
+        # Color pickers
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("##### Page Colors")
+            st.markdown("##### Page")
             bg_color = st.color_picker("Background", st.session_state.bg_color, key="bg_color_picker")
             st.session_state.bg_color = bg_color
             
@@ -427,7 +459,7 @@ with left:
             st.session_state.page_num_text_color = page_num_text_color
         
         with col2:
-            st.markdown("##### Title & Text")
+            st.markdown("##### Text")
             title_color = st.color_picker("Title", st.session_state.title_color, key="title_color_picker")
             st.session_state.title_color = title_color
             
@@ -435,8 +467,8 @@ with left:
             st.session_state.letter_color = letter_color
             
         with col3:
-            st.markdown("##### Word Box & Grid")
-            wb_bg_color = st.color_picker("Word Box Background", st.session_state.wb_bg_color, key="wb_bg_color_picker")
+            st.markdown("##### Box & Grid")
+            wb_bg_color = st.color_picker("Word Box BG", st.session_state.wb_bg_color, key="wb_bg_color_picker")
             st.session_state.wb_bg_color = wb_bg_color
             
             wb_border_color = st.color_picker("Word Box Border", st.session_state.wb_border_color, key="wb_border_color_picker")
@@ -451,45 +483,45 @@ with left:
 
     # TAB 6: Images & Extras
     with tab6:
-        st.subheader("🖼️ Images & Additional Settings")
+        st.subheader("🖼️ Images & Extras")
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("##### Image Settings")
             show_images = st.checkbox("Show Images", config.get('images', 'show'))
-            alternate_images = st.checkbox("Alternate Images", config.get('images', 'alternate'))
-            image_height = st.slider("Image Max Height (inches)", 0.5, 3.0, 
+            alternate_images = st.checkbox("Alternate", config.get('images', 'alternate'))
+            image_height = st.slider("Max Height", 0.5, 3.0, 
                                       config.get('images', 'max_height'), 0.1)
-            image_x_offset = st.slider("Horizontal Offset (inches)", 0.0, 1.0, 
+            image_x_offset = st.slider("X Offset", 0.0, 1.0, 
                                         config.get('images', 'position_x_offset'), 0.05)
-            image_y_offset = st.slider("Vertical Offset (inches)", 0.0, 1.0, 
+            image_y_offset = st.slider("Y Offset", 0.0, 1.0, 
                                         config.get('images', 'position_y_offset'), 0.05)
         
         with col2:
-            st.markdown("##### Image Files")
+            st.markdown("##### Upload Images")
             
-            left_uploaded = st.file_uploader("📤 Upload Left Image (PNG)", type=["png"], key="left_img")
+            left_uploaded = st.file_uploader("📤 Left Image (PNG)", type=["png"], key="left_img")
             if left_uploaded is not None:
                 left_img_path = f"images/{left_uploaded.name}"
                 with open(left_img_path, "wb") as f:
                     f.write(left_uploaded.read())
                 left_image = left_img_path
-                st.success(f"✅ Left image saved: {left_uploaded.name}")
+                st.success(f"✅ {left_uploaded.name}")
             else:
-                left_image = st.text_input("Or enter Left Image path", config.get('images', 'left_image'))
+                left_image = st.text_input("Or path", config.get('images', 'left_image'), key="left_path")
             
-            right_uploaded = st.file_uploader("📤 Upload Right Image (PNG)", type=["png"], key="right_img")
+            right_uploaded = st.file_uploader("📤 Right Image (PNG)", type=["png"], key="right_img")
             if right_uploaded is not None:
                 right_img_path = f"images/{right_uploaded.name}"
                 with open(right_img_path, "wb") as f:
                     f.write(right_uploaded.read())
                 right_image = right_img_path
-                st.success(f"✅ Right image saved: {right_uploaded.name}")
+                st.success(f"✅ {right_uploaded.name}")
             else:
-                right_image = st.text_input("Or enter Right Image path", config.get('images', 'right_image'))
+                right_image = st.text_input("Or path", config.get('images', 'right_image'), key="right_path")
             
-            preserve_aspect = st.checkbox("Preserve Aspect Ratio", 
+            preserve_aspect = st.checkbox("Preserve Aspect", 
                                            config.get('images', 'preserve_aspect_ratio'),
                                            key="preserve_aspect_ratio")
         
@@ -499,7 +531,7 @@ with left:
         
         with col3:
             st.markdown("##### Output")
-            output_file = st.text_input("Output Filename", config.get('general', 'output_file'))
+            output_file = st.text_input("Filename", config.get('general', 'output_file'))
         
         with col4:
             st.markdown("##### Advanced")
@@ -650,7 +682,8 @@ if live_mode and config_changed:
         config.data['general']['font_path'] = font_path
         config.data['general']['output_file'] = output_file
         
-        config.save()
+        # DON'T save to config.json - keep user prefs separate
+        # config.save()  # COMMENTED OUT - this was saving your dev changes!
         
         try:
             result = subprocess.run(
@@ -677,9 +710,13 @@ if live_mode and config_changed:
 # PDF Preview Section
 with right:
     st.markdown("### 📄 Live PDF Preview")
+    
+    # Browser compatibility note
+    st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
+    
     if st.session_state.pdf_bytes:
         base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="900" type="application/pdf"></iframe>'
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
         st.markdown(pdf_display, unsafe_allow_html=True)
         
         st.markdown("---")
@@ -694,5 +731,5 @@ with right:
 
 # Footer
 st.markdown("---")
-st.caption("💡 **Pro Tip:** Toggle LIVE MODE off to batch multiple changes before generating")
+st.caption("💡 **Pro Tip:** Use '♻️ Reset All' to restore defaults • Toggle LIVE MODE off to batch changes")
 st.caption("Made with 🔥 for Word Search Puzzles")
