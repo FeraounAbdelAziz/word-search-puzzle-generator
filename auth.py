@@ -3,11 +3,13 @@ Authentication system for Word Search Generator
 Handles user signup, login, and session management
 """
 
+
 import streamlit as st
 import json
 from pathlib import Path
 import hashlib
 import re
+
 
 
 class Auth:
@@ -99,50 +101,83 @@ class Auth:
         st.session_state.logged_in = False
 
 
+
 def show_auth_page():
     """Display login/signup page"""
     auth = Auth()
     
-    st.markdown('<p class="main-header">🔍 Word Search PDF Generator PRO</p>', unsafe_allow_html=True)
-    st.markdown("### Welcome! Please login or create an account")
+    # Center the auth form
+    col1, col2, col3 = st.columns([1, 2, 1])
     
-    tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
-    
-    with tab1:
-        st.subheader("Login to Your Account")
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_password")
+    with col2:
+        # Header
+        st.markdown("""
+            <div style="text-align: center; padding: 2rem 0 1rem 0;">
+                <h1 style="font-size: 2.5rem; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">
+                    🔍 Word Search Generator PRO
+                </h1>
+                <p style="color: #94a3b8; font-size: 1rem;">Create professional puzzle books in minutes</p>
+            </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("🔓 Login", use_container_width=True, type="primary"):
-            if email and password:
-                success, message = auth.login(email, password)
-                if success:
-                    st.session_state.user_email = email
-                    st.session_state.user_name = message
-                    st.session_state.logged_in = True
-                    st.success(f"Welcome back, {message}! 🎉")
-                    st.rerun()
-                else:
-                    st.error(message)
-            else:
-                st.warning("Please enter email and password")
-    
-    with tab2:
-        st.subheader("Create New Account")
-        name = st.text_input("Full Name", key="signup_name")
-        email = st.text_input("Email", key="signup_email")
-        password = st.text_input("Password", type="password", key="signup_password")
-        password_confirm = st.text_input("Confirm Password", type="password", key="signup_password_confirm")
+        # Compact tabs
+        tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
         
-        if st.button("✨ Create Account", use_container_width=True, type="primary"):
-            if name and email and password and password_confirm:
-                if password != password_confirm:
-                    st.error("Passwords don't match!")
-                else:
-                    success, message = auth.signup(email, password, name)
+        with tab1:
+            st.markdown("##### Login to Your Account")
+            
+            email = st.text_input("📧 Email", key="login_email", placeholder="your@email.com")
+            password = st.text_input("🔒 Password", type="password", key="login_password", placeholder="••••••••")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            if st.button("🔓 Login", use_container_width=True, type="primary", key="login_btn"):
+                if email and password:
+                    success, message = auth.login(email, password)
                     if success:
-                        st.success(message + " Please login!")
+                        st.session_state.user_email = email
+                        st.session_state.user_name = message
+                        st.session_state.logged_in = True
+                        st.success(f"✅ Welcome back, {message}!")
+                        st.rerun()
                     else:
-                        st.error(message)
-            else:
-                st.warning("Please fill in all fields")
+                        st.error(f"❌ {message}")
+                else:
+                    st.warning("⚠️ Please enter email and password")
+        
+        with tab2:
+            st.markdown("##### Create Your Account")
+            
+            name = st.text_input("👤 Full Name", key="signup_name", placeholder="John Doe")
+            email = st.text_input("📧 Email", key="signup_email", placeholder="your@email.com")
+            
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                password = st.text_input("🔒 Password", type="password", key="signup_password", placeholder="Min 6 chars")
+            with col_p2:
+                password_confirm = st.text_input("🔒 Confirm", type="password", key="signup_password_confirm", placeholder="••••••••")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            if st.button("✨ Create Account", use_container_width=True, type="primary", key="signup_btn"):
+                if name and email and password and password_confirm:
+                    if password != password_confirm:
+                        st.error("❌ Passwords don't match!")
+                    else:
+                        success, message = auth.signup(email, password, name)
+                        if success:
+                            st.success(f"✅ {message} Please login!")
+                        else:
+                            st.error(f"❌ {message}")
+                else:
+                    st.warning("⚠️ Please fill in all fields")
+        
+        # Footer info
+        st.markdown("---")
+        st.markdown("""
+            <div style="text-align: center; color: #64748b; font-size: 0.85rem; padding: 1rem 0;">
+                <p>🔒 Your data is stored securely and never shared</p>
+                <p style="margin-top: 0.5rem;">💡 Create custom word search puzzle books for Amazon KDP</p>
+            </div>
+        """, unsafe_allow_html=True)

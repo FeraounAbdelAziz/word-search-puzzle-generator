@@ -10,14 +10,17 @@ from auth import Auth, show_auth_page
 from user_preferences import UserPreferences
 
 
+
 # Ensure folders exist
 Path("images").mkdir(exist_ok=True)
 Path("fonts").mkdir(exist_ok=True)
 Path("user_data/preferences").mkdir(parents=True, exist_ok=True)
 
 
+
 # Page config
 st.set_page_config(page_title="Word Search PDF Generator", layout="wide", page_icon="🔍")
+
 
 
 # Custom CSS
@@ -33,24 +36,27 @@ st.markdown("""
         padding: 20px 0;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
+        gap: 2px;
         background: #3d256c;
         border-radius: 12px 12px 0 0;
         padding-left: 0.2em;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        overflow-x: auto;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        padding: 8px 12px;
+        height: 44px;
+        padding: 6px 10px;
         background-color: #4d318b !important;
         color: #fff !important;
-        border-radius: 10px 10px 0 0;
+        border-radius: 8px 8px 0 0;
         font-weight: 600;
-        font-family: 'Montserrat', sans-serif;
+        font-family: 'Inter', -apple-system, sans-serif;
         transition: background 0.2s;
         opacity: 0.92;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         white-space: nowrap;
+        min-width: fit-content;
+        flex-shrink: 0;
     }
     .stTabs [aria-selected="true"] {
         background-color: #fff !important;
@@ -78,6 +84,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -87,6 +94,7 @@ if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
 
+
 # Check if user is logged in
 auth = Auth()
 if not auth.is_logged_in():
@@ -94,9 +102,11 @@ if not auth.is_logged_in():
     st.stop()
 
 
+
 # User is logged in - show main app
 user = auth.get_current_user()
 user_prefs = UserPreferences(user['email'])
+
 
 
 # Load user's saved colors on first load
@@ -105,8 +115,10 @@ if 'colors_loaded' not in st.session_state:
     st.session_state.colors_loaded = True
 
 
+
 # Load config
 config = Config("config/config.json")
+
 
 
 # Title with user info
@@ -119,8 +131,10 @@ with col_user:
         auth.logout()
         st.rerun()
 
+
 st.markdown("**✨ Live Preview Mode - Changes apply instantly!**")
 st.markdown("---")
+
 
 
 # Initialize session state
@@ -128,6 +142,7 @@ if 'last_config' not in st.session_state:
     st.session_state.last_config = None
 if 'pdf_bytes' not in st.session_state:
     st.session_state.pdf_bytes = None
+
 
 
 # DEFAULT VALUES
@@ -145,27 +160,31 @@ DEFAULT_COLORS = {
 }
 
 
+
 # Initialize colors in session state
 for key, value in DEFAULT_COLORS.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
 
+
 # Main layout: Left for tabs, Right for preview
 left, right = st.columns([2, 3], gap="large")
 
 
+
 with left:
-    # SHORTENED TAB NAMES (so they all fit on one line)
+    # EVEN SHORTER TAB NAMES - all fit on one line
     tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "⚡ Controls",
+        "⚡ Quick",
         "📄 Page", 
         "📝 Text", 
-        "📦 Words", 
+        "📦 Box", 
         "🔲 Grid",
-        "🎨 Colors",
-        "🖼️ Extras"
+        "🎨 Color",
+        "🖼️ Extra"
     ])
+
 
     # TAB 0: Quick Controls
     with tab0:
@@ -291,6 +310,7 @@ with left:
         else:
             st.info("No saved books yet. Create and save your first book!")
 
+
     # TAB 1: Page Design
     with tab1:
         st.subheader("📄 Page Layout")
@@ -326,6 +346,7 @@ with left:
             page_num_height = st.slider("Box Height", 0.2, 0.6, 
                                           config.get('page_number', 'box_height'), 0.05)
             page_num_font_size = st.slider("Font Size", 12, 28, config.get('page_number', 'font_size'))
+
 
     # TAB 2: Typography
     with tab2:
@@ -373,6 +394,7 @@ with left:
             else:
                 font_path = config.get('general', 'font_path')
 
+
     # TAB 3: Word Box
     with tab3:
         st.subheader("📦 Word Box")
@@ -415,6 +437,7 @@ with left:
             min_words = st.slider("Min Words", 5, 30, 
                                   config.get('puzzle_generation', 'min_words_per_puzzle'))
 
+
     # TAB 4: Puzzle Grid
     with tab4:
         st.subheader("🔲 Puzzle Grid")
@@ -447,6 +470,7 @@ with left:
             st.markdown("##### Padding")
             end_padding = st.slider("End Padding", 0.0, 1.0, 
                                     config.get('solution', 'end_padding_factor'), 0.05)
+
 
     # TAB 5: Colors
     with tab5:
@@ -533,44 +557,30 @@ with left:
         
         st.markdown("---")
         
-        # Color pickers
+        # Color pickers - NO KEYS, just direct value updates
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             st.markdown("##### Page")
-            bg_color = st.color_picker("Background", st.session_state.bg_color, key="bg_color_picker")
-            st.session_state.bg_color = bg_color
-            
-            border_color = st.color_picker("Border", st.session_state.border_color, key="border_color_picker")
-            st.session_state.border_color = border_color
-            
-            page_num_color = st.color_picker("Page Number Box", st.session_state.page_num_color, key="page_num_color_picker")
-            st.session_state.page_num_color = page_num_color
-            
-            page_num_text_color = st.color_picker("Page Number Text", st.session_state.page_num_text_color, key="page_num_text_color_picker")
-            st.session_state.page_num_text_color = page_num_text_color
-        
+            st.session_state.bg_color = st.color_picker("Background", st.session_state.bg_color, key="bg_color_picker")
+            st.session_state.border_color = st.color_picker("Border", st.session_state.border_color, key="border_color_picker")
+            st.session_state.page_num_color = st.color_picker("Page Number Box", st.session_state.page_num_color, key="page_num_color_picker")
+            st.session_state.page_num_text_color = st.color_picker("Page Number Text", st.session_state.page_num_text_color, key="page_num_text_color_picker")
+
         with col2:
             st.markdown("##### Text")
-            title_color = st.color_picker("Title", st.session_state.title_color, key="title_color_picker")
-            st.session_state.title_color = title_color
-            
-            letter_color = st.color_picker("Letters", st.session_state.letter_color, key="letter_color_picker")
-            st.session_state.letter_color = letter_color
+            st.session_state.title_color = st.color_picker("Title", st.session_state.title_color, key="title_color_picker")
+            st.session_state.letter_color = st.color_picker("Letters", st.session_state.letter_color, key="letter_color_picker")
             
         with col3:
             st.markdown("##### Box & Grid")
-            wb_bg_color = st.color_picker("Word Box BG", st.session_state.wb_bg_color, key="wb_bg_color_picker")
-            st.session_state.wb_bg_color = wb_bg_color
+            st.session_state.wb_bg_color = st.color_picker("Word Box BG", st.session_state.wb_bg_color, key="wb_bg_color_picker")
+            st.session_state.wb_border_color = st.color_picker("Word Box Border", st.session_state.wb_border_color, key="wb_border_color_picker")
+            st.session_state.grid_line_color = st.color_picker("Grid Lines", st.session_state.grid_line_color, key="grid_line_color_picker")
+            st.session_state.highlight_color = st.color_picker("Highlight", st.session_state.highlight_color, key="highlight_color_picker")
             
-            wb_border_color = st.color_picker("Word Box Border", st.session_state.wb_border_color, key="wb_border_color_picker")
-            st.session_state.wb_border_color = wb_border_color
-            
-            grid_line_color = st.color_picker("Grid Lines", st.session_state.grid_line_color, key="grid_line_color_picker")
-            st.session_state.grid_line_color = grid_line_color
-            
-            highlight_color = st.color_picker("Highlight", st.session_state.highlight_color, key="highlight_color_picker")
-            st.session_state.highlight_color = highlight_color
+
+
 
     # TAB 6: Images & Extras
     with tab6:
@@ -636,6 +646,7 @@ def hex_to_rgb(hex_color):
     return [int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4)]
 
 
+
 current_config = {
     "puzzle_count": puzzle_count,
     "grid_size": grid_size,
@@ -644,12 +655,12 @@ current_config = {
     "page_width": page_width,
     "page_height": page_height,
     "margin": margin,
-    "bg_color": bg_color,
-    "border_color": border_color,
+    "bg_color": st.session_state.bg_color,  # READ FROM SESSION STATE
+    "border_color": st.session_state.border_color,  # READ FROM SESSION STATE
     "border_width": border_width,
     "border_radius": border_radius,
     "title_size": title_size,
-    "title_color": title_color,
+    "title_color": st.session_state.title_color,  # READ FROM SESSION STATE
     "title_bold": title_bold,
     "title_position": title_position,
     "title_bold_offset": title_bold_offset,
@@ -658,8 +669,8 @@ current_config = {
     "wb_font_size": wb_font_size,
     "wb_min_font": wb_min_font,
     "wb_sort": wb_sort,
-    "wb_bg_color": wb_bg_color,
-    "wb_border_color": wb_border_color,
+    "wb_bg_color": st.session_state.wb_bg_color,  # READ FROM SESSION STATE
+    "wb_border_color": st.session_state.wb_border_color,  # READ FROM SESSION STATE
     "wb_position": wb_position,
     "wb_height": wb_height,
     "wb_margin_left": wb_margin_left,
@@ -667,19 +678,19 @@ current_config = {
     "wb_border_width": wb_border_width,
     "wb_border_radius": wb_border_radius,
     "wb_vertical_align": wb_vertical_align,
-    "grid_line_color": grid_line_color,
+    "grid_line_color": st.session_state.grid_line_color,  # READ FROM SESSION STATE
     "grid_line_width": grid_line_width,
-    "letter_color": letter_color,
+    "letter_color": st.session_state.letter_color,  # READ FROM SESSION STATE
     "letter_font_factor": letter_font_factor,
     "letter_v_offset": letter_v_offset,
     "grid_position": grid_position,
     "show_solutions": show_solutions,
-    "highlight_color": highlight_color,
+    "highlight_color": st.session_state.highlight_color,  # READ FROM SESSION STATE
     "highlight_thickness": highlight_thickness,
     "end_padding": end_padding,
     "show_page_nums": show_page_nums,
-    "page_num_color": page_num_color,
-    "page_num_text_color": page_num_text_color,
+    "page_num_color": st.session_state.page_num_color,  # READ FROM SESSION STATE
+    "page_num_text_color": st.session_state.page_num_text_color,  # READ FROM SESSION STATE
     "page_num_position": page_num_position,
     "page_num_width": page_num_width,
     "page_num_height": page_num_height,
@@ -697,12 +708,15 @@ current_config = {
     "preserve_aspect": preserve_aspect,
 }
 
+
 # Save snapshot for book saving
 st.session_state.current_config_snapshot = current_config
 
 
+
 # Check for changes and regenerate
 config_changed = st.session_state.last_config != current_config
+
 
 
 if live_mode and config_changed:
@@ -717,13 +731,13 @@ if live_mode and config_changed:
         config.data['page']['width'] = page_width
         config.data['page']['height'] = page_height
         config.data['page']['margin'] = margin
-        config.data['page']['background_color'] = hex_to_rgb(bg_color)
-        config.data['page']['border_color'] = hex_to_rgb(border_color)
+        config.data['page']['background_color'] = hex_to_rgb(st.session_state.bg_color)
+        config.data['page']['border_color'] = hex_to_rgb(st.session_state.border_color)
         config.data['page']['border_width'] = border_width
         config.data['page']['border_radius'] = border_radius
         
         config.data['title']['font_size'] = title_size
-        config.data['title']['color'] = hex_to_rgb(title_color)
+        config.data['title']['color'] = hex_to_rgb(st.session_state.title_color)
         config.data['title']['bold_effect'] = title_bold
         config.data['title']['position_from_top'] = title_position
         config.data['title']['bold_offset'] = title_bold_offset
@@ -733,8 +747,8 @@ if live_mode and config_changed:
         config.data['word_box']['base_font_size'] = wb_font_size
         config.data['word_box']['min_font_size'] = wb_min_font
         config.data['word_box']['sort_by_length'] = wb_sort
-        config.data['word_box']['background_color'] = hex_to_rgb(wb_bg_color)
-        config.data['word_box']['border_color'] = hex_to_rgb(wb_border_color)
+        config.data['word_box']['background_color'] = hex_to_rgb(st.session_state.wb_bg_color)
+        config.data['word_box']['border_color'] = hex_to_rgb(st.session_state.wb_border_color)
         config.data['word_box']['position_from_top'] = wb_position
         config.data['word_box']['height'] = wb_height
         config.data['word_box']['margin_left'] = wb_margin_left
@@ -743,21 +757,21 @@ if live_mode and config_changed:
         config.data['word_box']['border_radius'] = wb_border_radius
         config.data['word_box']['vertical_align'] = wb_vertical_align
         
-        config.data['puzzle_grid']['grid_line_color'] = hex_to_rgb(grid_line_color)
+        config.data['puzzle_grid']['grid_line_color'] = hex_to_rgb(st.session_state.grid_line_color)
         config.data['puzzle_grid']['grid_line_width'] = grid_line_width
-        config.data['puzzle_grid']['letter_color'] = hex_to_rgb(letter_color)
+        config.data['puzzle_grid']['letter_color'] = hex_to_rgb(st.session_state.letter_color)
         config.data['puzzle_grid']['letter_font_size_factor'] = letter_font_factor
         config.data['puzzle_grid']['letter_vertical_offset'] = letter_v_offset
         config.data['puzzle_grid']['position_from_top'] = grid_position
         
-        config.data['solution']['highlight_color'] = hex_to_rgb(highlight_color)
+        config.data['solution']['highlight_color'] = hex_to_rgb(st.session_state.highlight_color)
         config.data['solution']['thickness_factor'] = highlight_thickness
         config.data['solution']['end_padding_factor'] = end_padding
         config.data['solution']['show_solutions'] = show_solutions
         
         config.data['page_number']['show'] = show_page_nums
-        config.data['page_number']['box_color'] = hex_to_rgb(page_num_color)
-        config.data['page_number']['text_color'] = hex_to_rgb(page_num_text_color)
+        config.data['page_number']['box_color'] = hex_to_rgb(st.session_state.page_num_color)
+        config.data['page_number']['text_color'] = hex_to_rgb(st.session_state.page_num_text_color)
         config.data['page_number']['position_from_bottom'] = page_num_position
         config.data['page_number']['box_width'] = page_num_width
         config.data['page_number']['box_height'] = page_num_height
@@ -776,6 +790,8 @@ if live_mode and config_changed:
         config.data['general']['font_path'] = font_path
         config.data['general']['output_file'] = output_file
         
+        config.save()  # DON'T FORGET TO SAVE!
+        
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "src.generate_book"],
@@ -793,9 +809,11 @@ if live_mode and config_changed:
                         st.session_state.pdf_bytes = f.read()
                 st.toast("✅ PDF Generated!", icon="✅")
             else:
-                st.error(f"Error: {result.stderr}")
+                st.error(f"❌ Error generating PDF:\n{result.stderr}")
         except Exception as e:
-            st.error(f"Error: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
+
+
 
 
 # PDF Preview Section
@@ -817,6 +835,7 @@ with right:
         pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
         st.metric("Pages", pages)
         st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # Footer
