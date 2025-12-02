@@ -1,0 +1,127 @@
+{
+  "page": {
+    "width": 8.5,
+    "height": 11.0,
+    "margin": 0.5,
+    "background_color": [
+      0.8509803921568627,
+      0.9411764705882353,
+      0.9725490196078431
+    ],
+    "box_color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "border_color": [
+      0.35294117647058826,
+      0.611764705882353,
+      0.7411764705882353
+    ],
+    "border_width": 4,
+    "border_radius": 20
+  },
+  "title": {
+    "font_size": 42,
+    "color": [
+      0.20392156862745098,
+      0.5372549019607843,
+      0.7019607843137254
+    ],
+    "position_from_top": 1.1,
+    "bold_effect": true,
+    "bold_offset": 0.5
+  },
+  "word_box": {
+    "position_from_top": 2.0,
+    "height": 8.0,
+    "margin_left": 0.3,
+    "margin_right": 0.3,
+    "background_color": [
+      0.9411764705882353,
+      0.9725490196078431,
+      0.984313725490196
+    ],
+    "border_color": [
+      0.35294117647058826,
+      0.611764705882353,
+      0.7411764705882353
+    ],
+    "border_width": 2,
+    "border_radius": 12,
+    "columns": 4,
+    "rows_per_column": 10,
+    "base_font_size": 13,
+    "min_font_size": 8,
+    "sort_by_length": true,
+    "vertical_align": "center"
+  },
+  "puzzle_grid": {
+    "position_from_top": 2.0,
+    "grid_line_color": [
+      0.7411764705882353,
+      0.8509803921568627,
+      0.9411764705882353
+    ],
+    "grid_line_width": 5,
+    "letter_font_size_factor": 0.55,
+    "letter_color": [
+      0.12156862745098039,
+      0.23137254901960785,
+      0.30196078431372547
+    ],
+    "letter_vertical_offset": 0.2
+  },
+  "solution": {
+    "highlight_color": [
+      0.4823529411764706,
+      0.7411764705882353,
+      0.9137254901960784
+    ],
+    "thickness_factor": 0.7,
+    "end_padding_factor": 0.45,
+    "show_solutions": true
+  },
+  "page_number": {
+    "show": true,
+    "position_from_bottom": 0.2,
+    "box_width": 1.2,
+    "box_height": 0.35,
+    "box_color": [
+      0.20392156862745098,
+      0.5372549019607843,
+      0.7019607843137254
+    ],
+    "text_color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "font_size": 18,
+    "rounded_top_only": true,
+    "border_radius": 10
+  },
+  "images": {
+    "show": true,
+    "pages": "word_bank_only",
+    "alternate": true,
+    "max_height": 1.1,
+    "position_x_offset": 0.95,
+    "position_y_offset": 0.2,
+    "preserve_aspect_ratio": true,
+    "left_image": "left.png",
+    "right_image": "right.png"
+  },
+  "puzzle_generation": {
+    "count": 1,
+    "grid_size": 16,
+    "seed": 42,
+    "min_words_per_puzzle": 6,
+    "max_word_length": 25
+  },
+  "general": {
+    "font_path": "fonts/TT Lakes Neue Trial Regular.ttf",
+    "output_file": "winter_word_search.pdf",
+    "puzzle_data": "puzzle_bank_custom.json"
+  }
+}
