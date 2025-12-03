@@ -113,7 +113,7 @@
     "right_image": "right.png"
   },
   "puzzle_generation": {
-    "count": 1,
+    "count": 50,
     "grid_size": 25,
     "seed": 42,
     "min_words_per_puzzle": 8,
