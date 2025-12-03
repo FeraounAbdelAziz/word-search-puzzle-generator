@@ -805,15 +805,14 @@ st.session_state.current_config_snapshot = current_config
 config_changed = st.session_state.last_config != current_config
 
 
-
 if live_mode and config_changed:
     st.session_state.last_config = current_config
-
+    
     # AUTO-SAVE SESSION
     user_prefs.save_last_session(current_config)
     st.session_state.last_auto_save = time.time()
 
-    # SHOW WHAT'S HAPPENING
+    # SHOW WHAT'S HAPPENING WITH ERRORS VISIBLE
     status_container = st.empty()
     status_container.info("🔄 Starting PDF generation...")
 
@@ -898,7 +897,14 @@ if live_mode and config_changed:
             errors='replace'
         )
 
+        # SHOW ALL OUTPUT (DEBUG MODE)
         status_container.info(f"📊 Generation completed with code: {result.returncode}")
+        
+        if result.stdout:
+            st.text_area("📤 STDOUT:", result.stdout, height=150)
+        
+        if result.stderr:
+            st.text_area("⚠️ STDERR:", result.stderr, height=150)
 
         if result.returncode == 0:
             pdf_path = Path(config.get('general', 'output_file'))
@@ -909,18 +915,16 @@ if live_mode and config_changed:
                 status_container.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
             else:
                 status_container.error(f"❌ PDF not found at: {pdf_path}")
-                st.error(f"STDOUT: {result.stdout}")
-                st.error(f"STDERR: {result.stderr}")
+                st.error(f"Current directory: {Path.cwd()}")
+                st.error(f"Files in directory: {list(Path.cwd().glob('*.pdf'))}")
         else:
-            status_container.error(f"❌ Generation failed!")
-            st.error(f"**Return code:** {result.returncode}")
-            st.error(f"**STDOUT:**\n{result.stdout}")
-            st.error(f"**STDERR:**\n{result.stderr}")
+            status_container.error(f"❌ Generation failed with code {result.returncode}!")
 
     except Exception as e:
         status_container.error(f"❌ EXCEPTION: {str(e)}")
         import traceback
-        st.error(traceback.format_exc())
+        st.error("Full traceback:")
+        st.code(traceback.format_exc())
 
 
 # PDF Preview Section
