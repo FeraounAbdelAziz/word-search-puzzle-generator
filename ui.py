@@ -8,7 +8,8 @@ import time
 from config.config_loader import Config
 from auth import Auth, show_auth_page
 from user_preferences import UserPreferences
-
+from pdf2image import convert_from_bytes
+from PIL import Image
 
 
 # Ensure folders exist
@@ -17,10 +18,8 @@ Path("fonts").mkdir(exist_ok=True)
 Path("user_data/preferences").mkdir(parents=True, exist_ok=True)
 
 
-
 # Page config
 st.set_page_config(page_title="Word Search PDF Generator", layout="wide", page_icon="🔍")
-
 
 
 # Custom CSS
@@ -84,7 +83,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-
 # Initialize session state
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
@@ -94,7 +92,6 @@ if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
 
-
 # Check if user is logged in
 auth = Auth()
 if not auth.is_logged_in():
@@ -102,11 +99,9 @@ if not auth.is_logged_in():
     st.stop()
 
 
-
 # User is logged in - show main app
 user = auth.get_current_user()
 user_prefs = UserPreferences(user['email'])
-
 
 
 # Load user's saved colors on first load
@@ -115,10 +110,8 @@ if 'colors_loaded' not in st.session_state:
     st.session_state.colors_loaded = True
 
 
-
 # Load config
 config = Config("config/config.json")
-
 
 
 # Title with user info
@@ -131,10 +124,8 @@ with col_user:
         auth.logout()
         st.rerun()
 
-
 st.markdown("**✨ Live Preview Mode - Changes apply instantly!**")
 st.markdown("---")
-
 
 
 # Initialize session state
@@ -142,7 +133,6 @@ if 'last_config' not in st.session_state:
     st.session_state.last_config = None
 if 'pdf_bytes' not in st.session_state:
     st.session_state.pdf_bytes = None
-
 
 
 # DEFAULT VALUES
@@ -160,17 +150,14 @@ DEFAULT_COLORS = {
 }
 
 
-
 # Initialize colors in session state
 for key, value in DEFAULT_COLORS.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
 
-
 # Main layout: Left for tabs, Right for preview
 left, right = st.columns([2, 3], gap="large")
-
 
 
 with left:
@@ -184,7 +171,6 @@ with left:
         "🎨 Color",
         "🖼️ Extra"
     ])
-
 
     # TAB 0: Quick Controls
     with tab0:
@@ -256,8 +242,6 @@ with left:
         with col_save:
             if st.button("💾 Save Book", use_container_width=True, key="save_book_btn"):
                 if book_name:
-                    # We'll define current_config later, but save it here
-                    # This is a placeholder - actual config is created below
                     try:
                         user_prefs.save_book(book_name, st.session_state.get('current_config_snapshot', {}))
                         user_prefs.save_current_colors()
@@ -270,7 +254,6 @@ with left:
                     st.warning("Please enter a book name")
         
         with col_colors:
-            # Auto-save colors button
             if st.button("💾 Save Colors", use_container_width=True, key="save_colors_btn"):
                 user_prefs.save_current_colors()
                 st.success("✅ Colors saved!")
@@ -294,7 +277,6 @@ with left:
                         if st.button("📂", key=f"load_{book['name']}", help="Load book", use_container_width=True):
                             loaded_config = user_prefs.load_book(book['name'])
                             if loaded_config:
-                                # Apply loaded config to session state
                                 st.session_state.update(loaded_config)
                                 st.session_state.last_config = None
                                 st.success(f"✅ Loaded '{book['name']}'!")
@@ -309,7 +291,6 @@ with left:
                             st.rerun()
         else:
             st.info("No saved books yet. Create and save your first book!")
-
 
     # TAB 1: Page Design
     with tab1:
@@ -346,7 +327,6 @@ with left:
             page_num_height = st.slider("Box Height", 0.2, 0.6, 
                                           config.get('page_number', 'box_height'), 0.05)
             page_num_font_size = st.slider("Font Size", 12, 28, config.get('page_number', 'font_size'))
-
 
     # TAB 2: Typography
     with tab2:
@@ -394,7 +374,6 @@ with left:
             else:
                 font_path = config.get('general', 'font_path')
 
-
     # TAB 3: Word Box
     with tab3:
         st.subheader("📦 Word Box")
@@ -437,7 +416,6 @@ with left:
             min_words = st.slider("Min Words", 5, 30, 
                                   config.get('puzzle_generation', 'min_words_per_puzzle'))
 
-
     # TAB 4: Puzzle Grid
     with tab4:
         st.subheader("🔲 Puzzle Grid")
@@ -470,7 +448,6 @@ with left:
             st.markdown("##### Padding")
             end_padding = st.slider("End Padding", 0.0, 1.0, 
                                     config.get('solution', 'end_padding_factor'), 0.05)
-
 
     # TAB 5: Colors
     with tab5:
@@ -557,7 +534,6 @@ with left:
         
         st.markdown("---")
         
-        # Color pickers - NO KEYS, just direct value updates
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -578,9 +554,6 @@ with left:
             st.session_state.wb_border_color = st.color_picker("Word Box Border", st.session_state.wb_border_color, key="wb_border_color_picker")
             st.session_state.grid_line_color = st.color_picker("Grid Lines", st.session_state.grid_line_color, key="grid_line_color_picker")
             st.session_state.highlight_color = st.color_picker("Highlight", st.session_state.highlight_color, key="highlight_color_picker")
-            
-
-
 
     # TAB 6: Images & Extras
     with tab6:
@@ -646,7 +619,6 @@ def hex_to_rgb(hex_color):
     return [int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4)]
 
 
-
 current_config = {
     "puzzle_count": puzzle_count,
     "grid_size": grid_size,
@@ -655,12 +627,12 @@ current_config = {
     "page_width": page_width,
     "page_height": page_height,
     "margin": margin,
-    "bg_color": st.session_state.bg_color,  # READ FROM SESSION STATE
-    "border_color": st.session_state.border_color,  # READ FROM SESSION STATE
+    "bg_color": st.session_state.bg_color,
+    "border_color": st.session_state.border_color,
     "border_width": border_width,
     "border_radius": border_radius,
     "title_size": title_size,
-    "title_color": st.session_state.title_color,  # READ FROM SESSION STATE
+    "title_color": st.session_state.title_color,
     "title_bold": title_bold,
     "title_position": title_position,
     "title_bold_offset": title_bold_offset,
@@ -669,8 +641,8 @@ current_config = {
     "wb_font_size": wb_font_size,
     "wb_min_font": wb_min_font,
     "wb_sort": wb_sort,
-    "wb_bg_color": st.session_state.wb_bg_color,  # READ FROM SESSION STATE
-    "wb_border_color": st.session_state.wb_border_color,  # READ FROM SESSION STATE
+    "wb_bg_color": st.session_state.wb_bg_color,
+    "wb_border_color": st.session_state.wb_border_color,
     "wb_position": wb_position,
     "wb_height": wb_height,
     "wb_margin_left": wb_margin_left,
@@ -678,19 +650,19 @@ current_config = {
     "wb_border_width": wb_border_width,
     "wb_border_radius": wb_border_radius,
     "wb_vertical_align": wb_vertical_align,
-    "grid_line_color": st.session_state.grid_line_color,  # READ FROM SESSION STATE
+    "grid_line_color": st.session_state.grid_line_color,
     "grid_line_width": grid_line_width,
-    "letter_color": st.session_state.letter_color,  # READ FROM SESSION STATE
+    "letter_color": st.session_state.letter_color,
     "letter_font_factor": letter_font_factor,
     "letter_v_offset": letter_v_offset,
     "grid_position": grid_position,
     "show_solutions": show_solutions,
-    "highlight_color": st.session_state.highlight_color,  # READ FROM SESSION STATE
+    "highlight_color": st.session_state.highlight_color,
     "highlight_thickness": highlight_thickness,
     "end_padding": end_padding,
     "show_page_nums": show_page_nums,
-    "page_num_color": st.session_state.page_num_color,  # READ FROM SESSION STATE
-    "page_num_text_color": st.session_state.page_num_text_color,  # READ FROM SESSION STATE
+    "page_num_color": st.session_state.page_num_color,
+    "page_num_text_color": st.session_state.page_num_text_color,
     "page_num_position": page_num_position,
     "page_num_width": page_num_width,
     "page_num_height": page_num_height,
@@ -708,20 +680,15 @@ current_config = {
     "preserve_aspect": preserve_aspect,
 }
 
-
 # Save snapshot for book saving
 st.session_state.current_config_snapshot = current_config
-
-
 
 # Check for changes and regenerate
 config_changed = st.session_state.last_config != current_config
 
-
 if live_mode and config_changed:
     st.session_state.last_config = current_config
     
-    # SHOW WHAT'S HAPPENING
     status_container = st.empty()
     status_container.info("🔄 Starting PDF generation...")
     
@@ -831,26 +798,66 @@ if live_mode and config_changed:
         st.error(traceback.format_exc())
 
 
-# PDF Preview Section
+# PDF Preview Section - NEW IMAGE-BASED PREVIEW
 with right:
-    st.markdown("### 📄 Live PDF Preview")
-    
-    st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
+    st.markdown("### 📄 Live Preview")
     
     if st.session_state.pdf_bytes:
-        base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
-        st.metric("Puzzles", puzzle_count)
-        st.metric("Grid", f"{grid_size}×{grid_size}")
-        pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
-        st.metric("Pages", pages)
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        try:
+            # Convert ONLY first page to image for fast preview
+            images = convert_from_bytes(
+                st.session_state.pdf_bytes, 
+                first_page=1, 
+                last_page=1,
+                dpi=150  # Good balance of quality vs speed
+            )
+            
+            if images:
+                # Show first page preview
+                st.image(images[0], use_container_width=True, caption="Page 1 Preview")
+                
+                # Quick stats below preview
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("📄 File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
+                with col2:
+                    st.metric("🧩 Puzzles", puzzle_count)
+                with col3:
+                    st.metric("🔢 Grid", f"{grid_size}×{grid_size}")
+                with col4:
+                    pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
+                    st.metric("📑 Pages", pages)
+                
+                # Download button
+                st.download_button(
+                    label="📥 Download Full PDF",
+                    data=st.session_state.pdf_bytes,
+                    file_name=config.get('general', 'output_file'),
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary"
+                )
+                
+        except Exception as e:
+            st.error(f"Preview error: {str(e)}")
+            st.info("📥 Download the PDF to view it")
+            
+            # Fallback download button
+            st.download_button(
+                label="📥 Download PDF",
+                data=st.session_state.pdf_bytes,
+                file_name=config.get('general', 'output_file'),
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+            
+    else:
+        # Placeholder when no PDF generated yet
+        st.info("⚡ **Adjust settings** in the left tabs to generate live preview")
+        st.image("https://via.placeholder.com/800x1000/667eea/ffffff?text=PDF+Preview+Here", 
+                 use_container_width=True)
 
 
 # Footer
