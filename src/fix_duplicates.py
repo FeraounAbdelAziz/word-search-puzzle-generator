@@ -1,65 +1,64 @@
 import json
 
-# Load the cleaned file
-with open('src/puzzle_bank_clean.json', 'r', encoding='utf-8') as f:
+# Load your file
+with open('src/8-10.json', 'r', encoding='utf-8') as f:
     puzzles = json.load(f)
 
 # Track ALL words globally to avoid any duplicates
 global_words = set()
 
-# Better theme-specific replacements (NO NUMBERS!)
+# Theme-specific replacements for your 40 themes
 theme_replacements = {
-    "Blizzards and Storms": ["vortex", "fury", "surge", "howling", "rage", "thunder"],
-    "Frozen Water Forms": ["crystals", "slush", "floe", "shard", "sheet", "chunk"],
-    "Alpine Skiing": ["carve", "mogul", "alpine", "slope", "peak", "run"],
-    "Snowboarding": ["stomp", "bonk", "tweak", "jib", "rail", "land"],
-    "Ice Skating Sports": ["twizzle", "spiral", "camel", "death", "biellmann", "layback"],
-    "Winter Mountaineering": ["bivvy", "crag", "notch", "rappel", "ascent", "ledge"],
-    "Snowmobiling": ["throttle", "carbide", "studs", "track", "runner", "belt"],
-    "Cross Country Skiing": ["striding", "herring", "poling", "waxless", "classic", "touring"],
-    "Snow Science": ["bonding", "settling", "failure", "profile", "pit", "test"],
-    "Avalanche Safety": ["beacon", "alert", "drill", "victim", "rescue", "search"],
-    "Winter Camping": ["bivy", "pad", "bag", "tarp", "fuel", "bottle"],
-    "Ice Fishing": ["tipup", "jigging", "auger", "shack", "minnow", "hole"],
-    "Winter Driving Hazards": ["skid", "spin", "slide", "ditch", "tow", "crash"],
-    "Heating Systems": ["burner", "vent", "duct", "valve", "pilot", "furnace"],
-    "Winter Fashion": ["parka", "cashmere", "merino", "alpaca", "mohair", "knit"],
-    "Winter Soups and Stews": ["hearty", "savory", "ladled", "simmering", "rich", "thick"],
-    "Firewood Management": ["maul", "wedge", "rounds", "kindling", "tinder", "logs"],
-    "Winter Literature": ["narnia", "chronicles", "fable", "tale", "saga", "story"],
-    "Frost Patterns": ["filigree", "lacework", "etching", "tracery", "delicate", "lacy"],
-    "Winter Depression Treatment": ["therapy", "counseling", "wellness", "routine", "hygiene", "support"],
-    "Polar Exploration": ["depot", "ration", "sledge", "husky", "diary", "tent"],
-    "Winter Sports Equipment": ["mount", "tune", "edge", "wax", "base", "tip"],
-    "Ice and Snow Formations": ["hummock", "growler", "anchor", "pancake", "brash", "chunk"],
-    "Winter Weather Phenomena": ["trough", "jetstream", "isobar", "gradient", "flux", "cell"],
-    "Winter Wildlife Behavior": ["molt", "cache", "roost", "browse", "forage", "hunt"],
-    "Avalanche and Snow Safety": ["crown", "flank", "runout", "debris", "bed", "path"],
-    "Nordic Skiing Techniques": ["skate", "offset", "tuck", "plant", "stride", "poling"],
-    "Ice Climbing": ["pick", "torque", "smear", "pillar", "curtain", "screw"],
-    "Snow Crystal Types": ["tabular", "skeletal", "aggregate", "habit", "cluster", "branch"],
-    "Winter Road Conditions": ["bare", "glazed", "patchy", "plowed", "treated", "slick"],
-    "Arctic Geography": ["tundra", "taiga", "fjord", "inlet", "cape", "sound"],
-    "Winter Indoor Activities": ["puzzle", "cozy", "craft", "knitting", "baking", "reading"],
-    "Snow Play and Yard Fun": ["fort", "angel", "fight", "tunnel", "maze", "pile"],
-    "Snow Removal and Home Maintenance": ["scrape", "brush", "pile", "clear", "deice", "salt"],
-    "Winter Home Safety": ["alarm", "blanket", "backup", "candle", "drill", "exit"],
-    "Winter City Life": ["metro", "rush", "corner", "curb", "taxi", "crowd"],
-    "Winter Backyard Birds": ["chickadee", "cardinal", "nuthatch", "finch", "jay", "sparrow"],
-    "Sledding and Toboggan Hills": ["tow", "lift", "slope", "speed", "lane", "run"],
-    "Winter Markets and Festivals": ["booth", "stall", "lights", "vendor", "stage", "ride"],
-    "Cozy Cabin Retreat": ["loft", "beam", "quilt", "hearth", "kettle", "porch"],
-    "Winter Health and Illness": ["cough", "fever", "tissue", "vapor", "remedy", "rest"],
-    "Subzero Weather Hazards": ["blast", "danger", "alert", "warning", "extreme", "harsh"],
-    "Winter Night Sky": ["aurora", "star", "moon", "glow", "arc", "orion"],
-    "Evergreen Forest in Winter": ["spruce", "cone", "trunk", "moss", "quiet", "pine"],
-    "Ice Sculpture Art": ["chisel", "carve", "shine", "display", "contest", "artist"],
-    "Winter Farm Life": ["barn", "hay", "stall", "feed", "cattle", "trough"],
-    "Arctic Marine Life": ["whale", "seal", "orca", "dive", "pod", "swim"],
-    "Snowshoeing and Winter Hiking": ["trail", "ridge", "summit", "ascent", "route", "trek"],
-    "Winter Photography": ["lens", "tripod", "shot", "focus", "exposure", "shutter"],
-    "Winter School Day": ["recess", "locker", "bus", "homework", "gym", "lunch"],
-    "Ice Age and Glaciation": ["till", "esker", "varve", "kettle", "moraine", "drift"],
+    "Ocean Creatures": ["plankton", "krill", "reef", "tide", "wave", "current", "brine", "marine", "deep", "surface"],
+    "Space & Astronomy": ["void", "space", "astro", "cosmic", "stellar", "lunar", "celestial", "planetary", "void", "expanse"],
+    "Farm Animals": ["pasture", "grazing", "feeding", "ranch", "livestock", "herd", "flock", "enclosure", "meadow", "rancher"],
+    "Sports & Games": ["athletic", "compete", "field", "court", "arena", "stadium", "league", "season", "playoff", "championship"],
+    "Fruits & Vegetables": ["harvest", "organic", "produce", "ripe", "juicy", "nutrition", "vitamin", "fiber", "healthy", "edible"],
+    "Weather & Seasons": ["meteorology", "forecast", "pressure", "front", "system", "conditions", "outlook", "pattern", "cycle", "equinox"],
+    "Jobs & Careers": ["profession", "occupation", "employment", "career", "job", "work", "labor", "trade", "skill", "expertise"],
+    "Musical Instruments": ["melody", "rhythm", "harmony", "note", "chord", "sound", "tone", "pitch", "vibration", "resonance"],
+    "Countries & Places": ["nation", "territory", "land", "region", "continent", "capital", "republic", "state", "province", "country"],
+    "School Subjects": ["curriculum", "lesson", "course", "class", "lecture", "seminar", "tutorial", "quiz", "test", "exam"],
+    "Dinosaurs & Prehistoric": ["ancient", "primordial", "prehistoric", "mesozoic", "paleozoic", "era", "period", "epoch", "remains", "creature"],
+    "Holidays & Celebrations": ["festivity", "observance", "commemoration", "anniversary", "jubilee", "gala", "event", "function", "reception", "banquet"],
+    "Human Body & Health": ["anatomy", "physiology", "organ", "tissue", "cell", "system", "function", "wellness", "fitness", "vitality"],
+    "Transportation & Vehicles": ["transit", "travel", "journey", "voyage", "trip", "commute", "route", "highway", "express", "rapid"],
+    "Jungle & Wild Animals": ["predator", "prey", "habitat", "territory", "pack", "pride", "troop", "wilderness", "canine", "feline"],
+    "Kitchen & Cooking": ["culinary", "cuisine", "recipe", "dish", "meal", "preparation", "baking", "roasting", "sauteing", "steaming"],
+    "Trees & Plants": ["foliage", "vegetation", "flora", "greenery", "canopy", "understory", "forest", "woodland", "grove", "thicket"],
+    "Fairy Tales & Fantasy": ["enchantment", "sorcery", "mystical", "mythical", "legendary", "fabled", "magical", "whimsical", "realm", "kingdom"],
+    "Colors & Shapes": ["hue", "shade", "tint", "tone", "pigment", "form", "geometry", "polygon", "figure", "angular"],
+    "Emotions & Character": ["feelings", "mood", "temperament", "personality", "nature", "disposition", "attitude", "demeanor", "manner", "bearing"],
+    "Birds & Flying Creatures": ["avian", "flight", "wingspan", "plumage", "migration", "flock", "roost", "perch", "soar", "glide"],
+    "Insects & Bugs": ["insect", "arthropod", "exoskeleton", "antennae", "compound", "metamorphosis", "larvae", "nymph", "instar", "swarm"],
+    "Arctic & Polar Animals": ["frigid", "icy", "frosty", "subzero", "freezing", "pack", "floe", "drift", "bergs", "icecap"],
+    "Desert Life & Animals": ["arid", "parched", "scorching", "desolate", "wasteland", "scrubland", "badlands", "harsh", "extreme", "barren"],
+    "Woodland Forest Animals": ["forest", "woodland", "timberland", "brushland", "thicket", "copse", "glade", "clearing", "underbrush", "canopy"],
+    "Art & Crafts Supplies": ["creative", "artistic", "crafting", "handiwork", "project", "design", "pattern", "texture", "medium", "material"],
+    "Tools & Building": ["construction", "building", "carpentry", "masonry", "equipment", "apparatus", "device", "implement", "instrument", "tool"],
+    "Computer & Technology": ["digital", "electronic", "device", "gadget", "tech", "system", "network", "data", "information", "virtual"],
+    "Math & Numbers": ["arithmetic", "mathematics", "calculation", "computation", "numeric", "quantitative", "value", "amount", "total", "figure"],
+    "Books & Reading": ["literature", "reading", "publication", "volume", "tome", "manuscript", "text", "prose", "verse", "passage"],
+    "Rivers, Lakes & Water": ["aquatic", "waterway", "body", "freshwater", "flowing", "cascade", "torrent", "gushing", "babbling", "meandering"],
+    "Gems, Rocks & Minerals": ["precious", "semiprecious", "jewel", "stone", "crystalline", "formation", "deposit", "vein", "seam", "stratum"],
+    "Camping & Outdoor Adventures": ["outdoor", "wilderness", "backcountry", "expedition", "excursion", "outing", "jaunt", "ramble", "roam", "wander"],
+    "Reptiles & Amphibians": ["herptile", "coldblooded", "ectothermic", "scaly", "slither", "crawl", "bask", "hibernate", "estivate", "burrow"],
+    "Mountains & Landforms": ["topography", "elevation", "relief", "contour", "gradient", "incline", "escarpment", "massif", "range", "chain"],
+    "Garden & Flowers": ["horticulture", "gardening", "cultivation", "planting", "growing", "tending", "pruning", "weeding", "harvesting", "blooming"],
+    "Energy & Power": ["electrical", "mechanical", "kinetic", "potential", "thermal", "radiant", "chemical", "atomic", "sustainable", "renewable"],
+    "Clothing & Accessories": ["apparel", "garment", "attire", "outfit", "wardrobe", "fashion", "style", "wear", "clothing", "dress"],
+    "Food & Nutrition": ["nourishment", "sustenance", "edible", "consumable", "dietary", "nutritious", "wholesome", "nutritional", "eating", "dining"],
+    "Maps & Geography": ["cartography", "topographical", "geographical", "spatial", "location", "position", "coordinates", "bearing", "azimuth", "orientation"],
+    "Classroom Objects & Supplies": ["educational", "learning", "studying", "academic", "scholastic", "instructional", "teaching", "lesson", "class", "school"],
+    "Action Verbs & Movement": ["motion", "locomotion", "movement", "action", "activity", "gesture", "maneuver", "migrate", "traverse", "navigate"],
+    "Time & Calendar Words": ["temporal", "chronological", "duration", "period", "interval", "span", "epoch", "october", "november", "december"],
+    "Adjectives & Descriptions": ["descriptive", "quality", "characteristic", "attribute", "trait", "feature", "property", "aspect", "nature", "moderate"],
+    "Animal Homes & Habitats": ["dwelling", "shelter", "refuge", "sanctuary", "haven", "retreat", "abode", "residence", "domicile", "biome"],
+    "Hospital & Medical": ["medical", "clinical", "healthcare", "wellness", "health", "healing", "remedy", "cure", "treatment", "care"],
+    "Restaurant & Dining": ["culinary", "gastronomy", "eatery", "establishment", "dining", "cuisine", "meal", "service", "hospitality", "food"],
+    "City & Town Places": ["urban", "metropolitan", "municipal", "civic", "district", "quarter", "zone", "area", "locality", "precinct"],
+    "Musical Terms & Sounds": ["musical", "acoustic", "sonic", "auditory", "sound", "audio", "tonal", "melodic", "harmonic", "symphonic"],
+    "Opposites & Antonyms": ["opposite", "contrary", "converse", "reverse", "inverse", "between", "middle", "center", "forward", "backward"]
 }
 
 final_puzzles = []
@@ -101,9 +100,13 @@ for puzzle in puzzles:
     })
 
 # Save final version
-with open('puzzle_bank_no_duplicates.json', 'w', encoding='utf-8') as f:
+with open('8-10_clean.json', 'w', encoding='utf-8') as f:
     json.dump(final_puzzles, f, indent=2, ensure_ascii=False)
 
 print(f"✅ Fixed! All duplicates removed, NO NUMBERS!")
 print(f"Total themes: {len(final_puzzles)}")
 print(f"Total unique words: {len(global_words)}")
+print(f"\nThemes with replacements needed:")
+for puzzle in final_puzzles:
+    if len(puzzle['words']) < 40:
+        print(f"  - {puzzle['theme']}: {len(puzzle['words'])} words")

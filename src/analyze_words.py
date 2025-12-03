@@ -12,7 +12,8 @@ from typing import List
 # NEW: load puzzles from puzzle_bank_clean.json next to this file
 BASE_DIR = Path(__file__).resolve().parent
 PUZZLES: List[dict] = json.loads(
-    (BASE_DIR / "puzzle_bank_clean.json").read_text(encoding="utf-8")
+     (BASE_DIR.parent / "8-10_clean.json").read_text(encoding="utf-8")
+    # (BASE_DIR / "8-10_clean.json").read_text(encoding="utf-8")
 )
 
 

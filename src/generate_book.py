@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-
 import argparse
 import math
 import sys
 from io import BytesIO
 from pathlib import Path
 from typing import Iterable, List, Sequence, Tuple
-
 
 from PIL import Image
 from reportlab.lib import colors
@@ -17,10 +15,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-
 from .word_search import WordSearchPuzzle, PlacedWord
 from .puzzle_bank import PUZZLES
-
 
 # Import config
 sys.path.append(str(Path(__file__).parent.parent))
@@ -36,11 +32,10 @@ MARGIN = CONFIG.get('page', 'margin') * inch
 FONT_DISPLAY = "Biski"
 FONT_TEXT = "Biski"
 
-
-ASSET_LEFT = Path(__file__).with_name(CONFIG.get('images', 'left_image'))
-ASSET_RIGHT = Path(__file__).with_name(CONFIG.get('images', 'right_image'))
+# FIXED: Use Path() directly instead of with_name()
+ASSET_LEFT = Path(CONFIG.get('images', 'left_image'))
+ASSET_RIGHT = Path(CONFIG.get('images', 'right_image'))
 USER_BISKI_PATH: Path | None = None
-
 
 
 def ensure_fonts() -> None:
@@ -51,15 +46,12 @@ def ensure_fonts() -> None:
         register_biski_font()
 
 
-
 def register_biski_font() -> None:
     """Register BiskiTrial-Regular.ttf from --biski-path or common locations."""
     candidates: list[Path] = []
 
-
     if USER_BISKI_PATH:
         candidates.append(USER_BISKI_PATH)
-
 
     # Add common paths (only .ttf, NOT .otf)
     font_name = CONFIG.get('general', 'font_path')
@@ -69,13 +61,11 @@ def register_biski_font() -> None:
         Path(__file__).parent.parent / font_name,
     ])
 
-
     for candidate in candidates:
         if candidate.exists() and candidate.suffix.lower() == ".ttf":
             pdfmetrics.registerFont(TTFont(FONT_DISPLAY, str(candidate)))
             print(f"[generate_book] Registered Biski font from {candidate}")
             return
-
 
     raise FileNotFoundError(
         f"Biski TTF font not found. Tried: {[str(c) for c in candidates]}\n"
@@ -83,12 +73,10 @@ def register_biski_font() -> None:
     )
 
 
-
 def load_image_reader(asset_path: Path) -> ImageReader | None:
     if asset_path.exists():
         return ImageReader(str(asset_path))
     return None
-
 
 
 def draw_page_background(c: canvas.Canvas) -> None:
@@ -110,7 +98,6 @@ def draw_page_background(c: canvas.Canvas) -> None:
     c.roundRect(MARGIN * 0.5, MARGIN * 0.5,
                 PAGE_WIDTH - MARGIN, PAGE_HEIGHT - MARGIN,
                 border_radius, fill=0, stroke=1)
-
 
 
 def draw_page_number_box(c: canvas.Canvas, page_num: int) -> None:
@@ -154,7 +141,6 @@ def draw_page_number_box(c: canvas.Canvas, page_num: int) -> None:
     c.drawCentredString(PAGE_WIDTH / 2, box_y + 0.08 * inch, str(page_num))
 
 
-
 def draw_word_bank_page(
     c: canvas.Canvas,
     theme: str,
@@ -163,7 +149,6 @@ def draw_word_bank_page(
 ) -> None:
     """Left page: theme + PNGs + 40-word box."""
     draw_page_background(c)
-
 
     # ALTERNATE images based on page number (ONLY ON WORD BANK PAGES)
     if CONFIG.get('images', 'show'):
@@ -177,7 +162,6 @@ def draw_word_bank_page(
         else:
             left_asset = ASSET_LEFT
             right_asset = ASSET_RIGHT
-
 
         # LEFT SIDE IMAGE
         left_img = load_image_reader(left_asset)
@@ -198,7 +182,6 @@ def draw_word_bank_page(
                         width=img_width, height=img_height, mask="auto", 
                         preserveAspectRatio=CONFIG.get('images', 'preserve_aspect_ratio'))
 
-
         # RIGHT SIDE IMAGE
         right_img = load_image_reader(right_asset)
         if right_img:
@@ -218,7 +201,6 @@ def draw_word_bank_page(
                         width=img_width, height=img_height, mask="auto",
                         preserveAspectRatio=CONFIG.get('images', 'preserve_aspect_ratio'))
 
-
     # Theme header
     title_config = CONFIG.get('title')
     c.setFont(FONT_DISPLAY, title_config['font_size'])
@@ -237,7 +219,6 @@ def draw_word_bank_page(
     
     c.drawCentredString(center_x, title_y, title)
 
-
     # Word box
     wb_config = CONFIG.get('word_box')
     box_top = PAGE_HEIGHT - wb_config['position_from_top'] * inch
@@ -247,7 +228,6 @@ def draw_word_bank_page(
     box_height = wb_config['height'] * inch
     box_bottom = box_top - box_height
 
-
     c.setLineWidth(wb_config['border_width'])
     border_color = wb_config['border_color']
     c.setStrokeColorRGB(*border_color)
@@ -255,7 +235,6 @@ def draw_word_bank_page(
     c.setFillColorRGB(*bg_color)
     c.roundRect(box_left, box_bottom, box_width, box_height, 
                 wb_config['border_radius'], fill=1, stroke=1)
-
 
     # Words - sorted by length, 4 columns, vertically centered
     cleaned = [w.upper() for w in words]
@@ -311,9 +290,7 @@ def draw_word_bank_page(
             c.setFont(FONT_TEXT, actual_size)
             c.drawCentredString(x, y, word)
 
-
     draw_page_number_box(c, page_num)
-
 
 
 def draw_puzzle_page(
@@ -324,7 +301,6 @@ def draw_puzzle_page(
 ) -> None:
     """Right page: puzzle grid - NO IMAGES."""
     draw_page_background(c)
-
 
     # Theme header - SAME AS WORD BANK PAGE
     title_config = CONFIG.get('title')
@@ -344,7 +320,6 @@ def draw_puzzle_page(
     
     c.drawCentredString(center_x, title_y, title)
 
-
     # Puzzle grid
     pg_config = CONFIG.get('puzzle_grid')
     grid_size = len(rows)
@@ -354,7 +329,6 @@ def draw_puzzle_page(
     origin_x = (PAGE_WIDTH - cell_size * grid_size) / 2
     origin_y = PAGE_HEIGHT - pg_config['position_from_top'] * inch - cell_size * grid_size
 
-
     grid_color = pg_config['grid_line_color']
     c.setLineWidth(pg_config['grid_line_width'])
     c.setStrokeColorRGB(*grid_color)
@@ -363,7 +337,6 @@ def draw_puzzle_page(
                origin_x + grid_size * cell_size, origin_y + i * cell_size)
         c.line(origin_x + i * cell_size, origin_y,
                origin_x + i * cell_size, origin_y + grid_size * cell_size)
-
 
     letter_color = pg_config['letter_color']
     letter_size = cell_size * pg_config['letter_font_size_factor']
@@ -376,9 +349,7 @@ def draw_puzzle_page(
             cy = origin_y + (grid_size - row_idx - 1) * cell_size + cell_size / 2
             c.drawCentredString(cx, cy - (cell_size * letter_offset), letter)
 
-
     draw_page_number_box(c, page_num)
-
 
 
 def draw_solution_overlay(
@@ -395,7 +366,6 @@ def draw_solution_overlay(
     thickness = cell_size * sol_config['thickness_factor']
     end_padding = cell_size * sol_config['end_padding_factor']
 
-
     for placed in placements:
         if not placed.path:
             continue
@@ -406,17 +376,14 @@ def draw_solution_overlay(
         end_x = origin_x + end[0] * cell_size + cell_size / 2
         end_y = origin_y + (grid_size - end[1] - 1) * cell_size + cell_size / 2
 
-
         dx = end_x - start_x
         dy = end_y - start_y
         length = math.hypot(dx, dy)
-
 
         if length == 0:
             c.setFillColor(bubble_color)
             c.circle(start_x, start_y, thickness / 2, stroke=0, fill=1)
             continue
-
 
         pad_x = (dx / length) * end_padding
         pad_y = (dy / length) * end_padding
@@ -425,9 +392,7 @@ def draw_solution_overlay(
         adj_end_x = end_x + pad_x
         adj_end_y = end_y + pad_y
 
-
         draw_capsule(c, adj_start_x, adj_start_y, adj_end_x, adj_end_y, thickness, bubble_color)
-
 
 
 def draw_capsule(
@@ -456,7 +421,6 @@ def draw_capsule(
     c.restoreState()
 
 
-
 def draw_solution_page_full(
     c: canvas.Canvas,
     puzzle_page_num: int,
@@ -465,7 +429,6 @@ def draw_solution_page_full(
 ) -> None:
     """Solution page - NO IMAGES."""
     draw_page_background(c)
-
 
     # Title
     title_config = CONFIG.get('title')
@@ -485,7 +448,6 @@ def draw_solution_page_full(
     
     c.drawCentredString(center_x, title_y, title)
 
-
     # Grid
     pg_config = CONFIG.get('puzzle_grid')
     rows = puzzle.as_rows()
@@ -496,9 +458,7 @@ def draw_solution_page_full(
     origin_x = (PAGE_WIDTH - cell_size * grid_size) / 2
     origin_y = PAGE_HEIGHT - pg_config['position_from_top'] * inch - cell_size * grid_size
 
-
     draw_solution_overlay(c, puzzle.placements, grid_size, origin_x, origin_y, cell_size)
-
 
     grid_color = pg_config['grid_line_color']
     c.setLineWidth(pg_config['grid_line_width'])
@@ -508,7 +468,6 @@ def draw_solution_page_full(
                origin_x + grid_size * cell_size, origin_y + i * cell_size)
         c.line(origin_x + i * cell_size, origin_y,
                origin_x + i * cell_size, origin_y + grid_size * cell_size)
-
 
     letter_color = pg_config['letter_color']
     letter_size = cell_size * pg_config['letter_font_size_factor']
@@ -521,9 +480,7 @@ def draw_solution_page_full(
             cy = origin_y + (grid_size - row_idx - 1) * cell_size + cell_size / 2
             c.drawCentredString(cx, cy - (cell_size * letter_offset), letter)
 
-
     draw_page_number_box(c, page_num)
-
 
 
 def debug_puzzles() -> None:
@@ -536,7 +493,6 @@ def debug_puzzles() -> None:
         theme = entry.get("theme", "???")
         words = entry.get("words", [])
         print(f"  Theme: {theme} ({len(words)} words) sample: {words[:5]}")
-
 
 
 def build_puzzles(count: int, size: int, seed: int) -> List[Tuple[dict, WordSearchPuzzle]]:
@@ -562,7 +518,6 @@ def build_puzzles(count: int, size: int, seed: int) -> List[Tuple[dict, WordSear
     return puzzles
 
 
-
 def generate_pdf(
     output: Path,
     count: int,
@@ -575,40 +530,31 @@ def generate_pdf(
     USER_BISKI_PATH = biski_path
     ensure_fonts()
 
-
     c = canvas.Canvas(str(output), pagesize=(PAGE_WIDTH, PAGE_HEIGHT), pageCompression=0)
     c.setPageCompression(0)
-
 
     debug_puzzles()
     puzzles = build_puzzles(count, size, seed)
     num_puzzles = len(puzzles)
 
-
     solution_pages = num_puzzles if CONFIG.get('solution', 'show_solutions') else 0
-
 
     total_pages = (num_puzzles * 2) + solution_pages
     print(f"Generating {num_puzzles} puzzles ({total_pages} pages)...")
 
-
     page_num = 1
-
 
     for idx, (data, puzzle) in enumerate(puzzles, start=1):
         if idx % 10 == 0:
             print(f"  Progress: {idx}/{num_puzzles} puzzles...")
 
-
         draw_word_bank_page(c, data["theme"], data["words"], page_num)
         c.showPage()
         page_num += 1
 
-
         draw_puzzle_page(c, data["theme"], puzzle.as_rows(), page_num)
         c.showPage()
         page_num += 1
-
 
     if CONFIG.get('solution', 'show_solutions'):
         for idx, (data, puzzle) in enumerate(puzzles, start=1):
@@ -619,11 +565,9 @@ def generate_pdf(
             c.showPage()
             page_num += 1
 
-
     c.save()
     print(f"[INFO] Generating {num_puzzles} puzzles ({total_pages} pages)...")
     USER_BISKI_PATH = None
-
 
 
 def parse_args() -> argparse.Namespace:
@@ -644,11 +588,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-
 def main() -> None:
     args = parse_args()
     generate_pdf(args.output, args.count, args.size, args.seed, args.biski_path, args.compact_solutions)
-
 
 
 if __name__ == "__main__":

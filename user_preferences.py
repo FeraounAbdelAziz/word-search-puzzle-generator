@@ -3,17 +3,22 @@ User preferences management
 Save and load user-specific settings
 """
 
+
 import streamlit as st
 import json
+import time
 from pathlib import Path
+
 
 class UserPreferences:
     def __init__(self, user_email):
         self.user_email = user_email
         self.prefs_dir = Path("user_data/preferences")
         self.prefs_dir.mkdir(parents=True, exist_ok=True)
-        self.prefs_file = self.prefs_dir / f"{user_email.replace('@', '_at_').replace('.', '_')}.json"
-    
+        self.user_dir = self.prefs_dir / user_email.replace('@', '_at_').replace('.', '_')
+        self.user_dir.mkdir(exist_ok=True)
+        self.prefs_file = self.user_dir / "preferences.json"
+
     def get_default_preferences(self):
         """Get default preferences - extracted from generate_book.py hardcoded values"""
         return {
@@ -78,7 +83,7 @@ class UserPreferences:
             "saved_books": [],
             "history": []
         }
-    
+
     def load(self):
         """Load user preferences"""
         if self.prefs_file.exists():
@@ -88,12 +93,12 @@ class UserPreferences:
             except:
                 return self.get_default_preferences()
         return self.get_default_preferences()
-    
+
     def save(self, preferences):
         """Save user preferences"""
         with open(self.prefs_file, 'w') as f:
             json.dump(preferences, f, indent=2)
-    
+
     def save_current_colors(self):
         """Save current session colors to user preferences"""
         prefs = self.load()
@@ -110,21 +115,42 @@ class UserPreferences:
             'highlight_color': st.session_state.get('highlight_color', '#7BBDE9'),
         }
         self.save(prefs)
-    
+
     def load_colors_to_session(self):
         """Load user's saved colors into session state"""
         prefs = self.load()
         colors = prefs.get('colors', {})
-        
+
         for key, value in colors.items():
             st.session_state[key] = value
-    
+
+    def save_last_session(self, session_data: dict) -> None:
+        """AUTO-SAVE: Save current session for auto-recovery."""
+        session_file = self.user_dir / "last_session.json"
+        with open(session_file, 'w', encoding='utf-8') as f:
+            json.dump({
+                "timestamp": time.time(),
+                "data": session_data
+            }, f, indent=2)
+
+    def load_last_session(self) -> dict:
+        """AUTO-LOAD: Load last saved session."""
+        session_file = self.user_dir / "last_session.json"
+        if session_file.exists():
+            try:
+                with open(session_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return data.get('data', {})
+            except:
+                return {}
+        return {}
+
     def save_book(self, book_name, config_snapshot):
         """Save a book configuration"""
         prefs = self.load()
-        
+
         existing = next((b for b in prefs['saved_books'] if b['name'] == book_name), None)
-        
+
         if existing:
             existing['config'] = config_snapshot
             existing['updated_at'] = str(st.session_state.get('timestamp', 'unknown'))
@@ -134,66 +160,66 @@ class UserPreferences:
                 'config': config_snapshot,
                 'created_at': str(st.session_state.get('timestamp', 'unknown'))
             })
-        
+
         self.save(prefs)
-    
+
     def get_saved_books(self):
         """Get all saved books"""
         prefs = self.load()
         return prefs.get('saved_books', [])
-    
+
     def delete_book(self, book_name):
         """Delete a saved book"""
         prefs = self.load()
         prefs['saved_books'] = [b for b in prefs['saved_books'] if b['name'] != book_name]
         self.save(prefs)
-    
+
     def load_book(self, book_name):
         """Load a saved book configuration"""
         books = self.get_saved_books()
         book = next((b for b in books if b['name'] == book_name), None)
         return book['config'] if book else None
-    
+
     def save_history_state(self, config_snapshot):
         """Save current state to history for undo/redo"""
         if 'history' not in st.session_state:
             st.session_state.history = []
         if 'history_index' not in st.session_state:
             st.session_state.history_index = -1
-        
+
         # Remove any future history if we're not at the end
         if st.session_state.history_index < len(st.session_state.history) - 1:
             st.session_state.history = st.session_state.history[:st.session_state.history_index + 1]
-        
+
         # Add new state
         st.session_state.history.append(config_snapshot.copy())
         st.session_state.history_index += 1
-        
+
         # Limit history to 50 states
         if len(st.session_state.history) > 50:
             st.session_state.history.pop(0)
             st.session_state.history_index -= 1
-    
+
     def undo(self):
         """Undo to previous state"""
         if 'history' not in st.session_state or st.session_state.history_index <= 0:
             return None
-        
+
         st.session_state.history_index -= 1
         return st.session_state.history[st.session_state.history_index]
-    
+
     def redo(self):
         """Redo to next state"""
         if 'history' not in st.session_state or st.session_state.history_index >= len(st.session_state.history) - 1:
             return None
-        
+
         st.session_state.history_index += 1
         return st.session_state.history[st.session_state.history_index]
-    
+
     def can_undo(self):
         """Check if undo is available"""
         return 'history' in st.session_state and st.session_state.history_index > 0
-    
+
     def can_redo(self):
         """Check if redo is available"""
         return 'history' in st.session_state and st.session_state.history_index < len(st.session_state.history) - 1
