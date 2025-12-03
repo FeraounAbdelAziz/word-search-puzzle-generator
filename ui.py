@@ -928,22 +928,35 @@ if live_mode and config_changed:
 with right:
     st.markdown("### 📄 Live PDF Preview")
 
-    st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
-
     if st.session_state.pdf_bytes:
-        base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
-
-        st.markdown("---")
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
-        st.metric("Puzzles", puzzle_count)
-        st.metric("Grid", f"{grid_size}×{grid_size}")
-        pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
-        st.metric("Pages", pages)
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        # Cloud-compatible PDF display
+        st.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
+        
+        # Show first page as image preview (works on cloud!)
+        try:
+            import fitz  # PyMuPDF
+            pdf_document = fitz.open(stream=st.session_state.pdf_bytes, filetype="pdf")
+            first_page = pdf_document[0]
+            pix = first_page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale for quality
+            img_bytes = pix.tobytes("png")
+            
+            st.image(img_bytes, caption="📄 First Page Preview", use_container_width=True)
+            st.info(f"📚 Showing page 1 of {len(pdf_document)}")
+            pdf_document.close()
+        except ImportError:
+            st.warning("⚠️ PDF preview requires PyMuPDF. Download PDF to view!")
+        except Exception as e:
+            st.warning(f"⚠️ Preview unavailable. Download PDF to view!")
+        
+        # Download button (always works!)
+        st.download_button(
+            label="📥 Download Full PDF",
+            data=st.session_state.pdf_bytes,
+            file_name=config.get('general', 'output_file'),
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary"
+        )
 
 
 
