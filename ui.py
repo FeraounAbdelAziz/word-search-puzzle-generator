@@ -923,13 +923,12 @@ if live_mode and config_changed:
         st.error(traceback.format_exc())
 
 
-
 # PDF Preview Section
 with right:
     st.markdown("### 📄 Live PDF Preview")
 
     if st.session_state.pdf_bytes:
-        # Cloud-compatible PDF display
+        # PDF generated successfully
         st.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
         
         # Show first page as image preview (works on cloud!)
@@ -937,7 +936,7 @@ with right:
             import fitz  # PyMuPDF
             pdf_document = fitz.open(stream=st.session_state.pdf_bytes, filetype="pdf")
             first_page = pdf_document[0]
-            pix = first_page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale for quality
+            pix = first_page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale
             img_bytes = pix.tobytes("png")
             
             st.image(img_bytes, caption="📄 First Page Preview", use_container_width=True)
@@ -946,9 +945,9 @@ with right:
         except ImportError:
             st.warning("⚠️ PDF preview requires PyMuPDF. Download PDF to view!")
         except Exception as e:
-            st.warning(f"⚠️ Preview unavailable. Download PDF to view!")
+            st.warning(f"⚠️ Preview unavailable: {str(e)}")
         
-        # Download button (always works!)
+        # Download button
         st.download_button(
             label="📥 Download Full PDF",
             data=st.session_state.pdf_bytes,
@@ -958,6 +957,30 @@ with right:
             type="primary"
         )
 
+        st.markdown("---")
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
+        st.metric("Puzzles", puzzle_count)
+        st.metric("Grid", f"{grid_size}×{grid_size}")
+        pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
+        st.metric("Pages", pages)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        # No PDF yet - show helpful message
+        st.info("💡 **No PDF generated yet**")
+        st.markdown("""
+        **To generate your first PDF:**
+        1. 🎨 Choose colors from presets or customize
+        2. ⚡ Adjust settings in **Quick** tab
+        3. 🔴 Make sure **LIVE PREVIEW** is ON
+        4. 🔄 Click **Regenerate** to force generation
+        
+        **Or just change any setting and it will auto-generate!** ✨
+        """)
+        
+        # Show a placeholder
+        st.image("https://via.placeholder.com/400x600/667eea/ffffff?text=PDF+Preview+Here", 
+                 caption="Waiting for PDF generation...", use_container_width=True)
 
 
 # Footer
