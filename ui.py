@@ -718,7 +718,6 @@ st.session_state.current_config_snapshot = current_config
 config_changed = st.session_state.last_config != current_config
 
 
-
 if live_mode and config_changed:
     st.session_state.last_config = current_config
     
@@ -790,9 +789,12 @@ if live_mode and config_changed:
         config.data['general']['font_path'] = font_path
         config.data['general']['output_file'] = output_file
         
-        config.save()  # DON'T FORGET TO SAVE!
+        config.save()
+        
+        st.write("DEBUG: Config saved")
         
         try:
+            st.write(f"DEBUG: Running command: python -m src.generate_book")
             result = subprocess.run(
                 [sys.executable, "-m", "src.generate_book"],
                 capture_output=True,
@@ -802,16 +804,30 @@ if live_mode and config_changed:
                 errors='replace'
             )
             
+            st.write(f"DEBUG: Return code: {result.returncode}")
+            st.write(f"DEBUG: Stdout: {result.stdout}")
+            if result.stderr:
+                st.write(f"DEBUG: Stderr: {result.stderr}")
+            
             if result.returncode == 0:
                 pdf_path = Path(config.get('general', 'output_file'))
+                st.write(f"DEBUG: Looking for PDF at: {pdf_path}")
+                st.write(f"DEBUG: PDF exists: {pdf_path.exists()}")
+                
                 if pdf_path.exists():
                     with open(pdf_path, "rb") as f:
                         st.session_state.pdf_bytes = f.read()
-                st.toast("✅ PDF Generated!", icon="✅")
+                    st.write(f"DEBUG: PDF loaded, size: {len(st.session_state.pdf_bytes)} bytes")
+                    st.toast("✅ PDF Generated!", icon="✅")
+                else:
+                    st.error(f"❌ PDF file not found at {pdf_path}")
             else:
                 st.error(f"❌ Error generating PDF:\n{result.stderr}")
         except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
+            st.error(f"❌ Exception: {str(e)}")
+            import traceback
+            st.write(traceback.format_exc())
+
 
 
 
