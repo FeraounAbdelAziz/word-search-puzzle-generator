@@ -1,0 +1,9 @@
+# Don't ignore these
+!fonts/*.ttf
+!images/*.png
+!*.json
+
+# But ignore these
+user_data/
+*.pdf
+__pycache__/

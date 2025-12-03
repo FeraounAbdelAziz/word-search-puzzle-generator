@@ -836,22 +836,54 @@ if live_mode and config_changed:
 with right:
     st.markdown("### 📄 Live PDF Preview")
     
-    st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
-    
     if st.session_state.pdf_bytes:
-        base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        st.success("✅ PDF Generated Successfully!")
+        
+        # Show metrics
+        st.markdown("---")
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
+        with col_m2:
+            st.metric("Puzzles", puzzle_count)
+        with col_m3:
+            pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
+            st.metric("Pages", pages)
         
         st.markdown("---")
-        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
-        st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
-        st.metric("Puzzles", puzzle_count)
-        st.metric("Grid", f"{grid_size}×{grid_size}")
-        pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
-        st.metric("Pages", pages)
-        st.markdown('</div>', unsafe_allow_html=True)
-
+        
+        # Download button (MAIN WAY to view on cloud)
+        st.download_button(
+            label="📥 Download & View PDF",
+            data=st.session_state.pdf_bytes,
+            file_name="word_search_puzzle.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+            type="primary"
+        )
+        
+        st.info("💡 Click the button above to download and view your PDF")
+        
+        # Try iframe preview (may not work on all browsers/cloud)
+        st.markdown("---")
+        with st.expander("🔍 Try Browser Preview (may not work on Chrome/Edge)"):
+            try:
+                base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
+                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
+                st.markdown(pdf_display, unsafe_allow_html=True)
+            except Exception as e:
+                st.warning("Browser preview not available. Please use the download button above.")
+    else:
+        st.info("👈 Configure your puzzle settings on the left and the PDF will generate automatically!")
+        st.markdown("---")
+        st.markdown("""
+        ### Quick Start Guide:
+        1. **⚡ Quick** tab: Set number of puzzles, grid size
+        2. **🎨 Color** tab: Choose your color theme
+        3. **📄 Page** tab: Adjust layout settings
+        4. **Generate** happens automatically with Live Preview ON
+        5. **Download** the PDF when ready!
+        """)
 
 
 # Footer
