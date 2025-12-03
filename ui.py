@@ -721,7 +721,12 @@ config_changed = st.session_state.last_config != current_config
 if live_mode and config_changed:
     st.session_state.last_config = current_config
     
-    with st.spinner("🔄 Regenerating PDF..."):
+    # SHOW WHAT'S HAPPENING
+    status_container = st.empty()
+    status_container.info("🔄 Starting PDF generation...")
+    
+    try:
+        # Update config
         config.data['puzzle_generation']['count'] = puzzle_count
         config.data['puzzle_generation']['grid_size'] = grid_size
         config.data['puzzle_generation']['seed'] = seed
@@ -790,100 +795,62 @@ if live_mode and config_changed:
         config.data['general']['output_file'] = output_file
         
         config.save()
+        status_container.info("✅ Config saved. Running generator...")
         
-        st.write("DEBUG: Config saved")
+        result = subprocess.run(
+            [sys.executable, "-m", "src.generate_book"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            encoding='utf-8',
+            errors='replace'
+        )
         
-        try:
-            st.write(f"DEBUG: Running command: python -m src.generate_book")
-            result = subprocess.run(
-                [sys.executable, "-m", "src.generate_book"],
-                capture_output=True,
-                text=True,
-                timeout=120,
-                encoding='utf-8',
-                errors='replace'
-            )
+        status_container.info(f"📊 Generation completed with code: {result.returncode}")
+        
+        if result.returncode == 0:
+            pdf_path = Path(config.get('general', 'output_file'))
             
-            st.write(f"DEBUG: Return code: {result.returncode}")
-            st.write(f"DEBUG: Stdout: {result.stdout}")
-            if result.stderr:
-                st.write(f"DEBUG: Stderr: {result.stderr}")
-            
-            if result.returncode == 0:
-                pdf_path = Path(config.get('general', 'output_file'))
-                st.write(f"DEBUG: Looking for PDF at: {pdf_path}")
-                st.write(f"DEBUG: PDF exists: {pdf_path.exists()}")
-                
-                if pdf_path.exists():
-                    with open(pdf_path, "rb") as f:
-                        st.session_state.pdf_bytes = f.read()
-                    st.write(f"DEBUG: PDF loaded, size: {len(st.session_state.pdf_bytes)} bytes")
-                    st.toast("✅ PDF Generated!", icon="✅")
-                else:
-                    st.error(f"❌ PDF file not found at {pdf_path}")
+            if pdf_path.exists():
+                with open(pdf_path, "rb") as f:
+                    st.session_state.pdf_bytes = f.read()
+                status_container.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
             else:
-                st.error(f"❌ Error generating PDF:\n{result.stderr}")
-        except Exception as e:
-            st.error(f"❌ Exception: {str(e)}")
-            import traceback
-            st.write(traceback.format_exc())
-
-
-
+                status_container.error(f"❌ PDF not found at: {pdf_path}")
+                st.error(f"STDOUT: {result.stdout}")
+                st.error(f"STDERR: {result.stderr}")
+        else:
+            status_container.error(f"❌ Generation failed!")
+            st.error(f"**Return code:** {result.returncode}")
+            st.error(f"**STDOUT:**\n{result.stdout}")
+            st.error(f"**STDERR:**\n{result.stderr}")
+            
+    except Exception as e:
+        status_container.error(f"❌ EXCEPTION: {str(e)}")
+        import traceback
+        st.error(traceback.format_exc())
 
 
 # PDF Preview Section
 with right:
     st.markdown("### 📄 Live PDF Preview")
     
+    st.info("💡 **Tip:** PDF preview works best in **Firefox**. If blocked in Edge/Chrome, use the **Download** button!")
+    
     if st.session_state.pdf_bytes:
-        st.success("✅ PDF Generated Successfully!")
-        
-        # Show metrics
-        st.markdown("---")
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
-        with col_m2:
-            st.metric("Puzzles", puzzle_count)
-        with col_m3:
-            pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
-            st.metric("Pages", pages)
+        base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
         
         st.markdown("---")
-        
-        # Download button (MAIN WAY to view on cloud)
-        st.download_button(
-            label="📥 Download & View PDF",
-            data=st.session_state.pdf_bytes,
-            file_name="word_search_puzzle.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-            type="primary"
-        )
-        
-        st.info("💡 Click the button above to download and view your PDF")
-        
-        # Try iframe preview (may not work on all browsers/cloud)
-        st.markdown("---")
-        with st.expander("🔍 Try Browser Preview (may not work on Chrome/Edge)"):
-            try:
-                base64_pdf = base64.b64encode(st.session_state.pdf_bytes).decode('utf-8')
-                pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-                st.markdown(pdf_display, unsafe_allow_html=True)
-            except Exception as e:
-                st.warning("Browser preview not available. Please use the download button above.")
-    else:
-        st.info("👈 Configure your puzzle settings on the left and the PDF will generate automatically!")
-        st.markdown("---")
-        st.markdown("""
-        ### Quick Start Guide:
-        1. **⚡ Quick** tab: Set number of puzzles, grid size
-        2. **🎨 Color** tab: Choose your color theme
-        3. **📄 Page** tab: Adjust layout settings
-        4. **Generate** happens automatically with Live Preview ON
-        5. **Download** the PDF when ready!
-        """)
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.metric("File Size", f"{len(st.session_state.pdf_bytes) / 1024:.1f} KB")
+        st.metric("Puzzles", puzzle_count)
+        st.metric("Grid", f"{grid_size}×{grid_size}")
+        pages = puzzle_count * 2 + (puzzle_count if show_solutions else 0)
+        st.metric("Pages", pages)
+        st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # Footer
