@@ -1,5 +1,4 @@
-    pdf2image
-    streamlit
-    reportlab==4.0.7
-    Pillow>=11.0.0
-    PyMuPDF
+PyMuPDF
+streamlit
+reportlab==4.0.7
+Pillow>=11.0.0
