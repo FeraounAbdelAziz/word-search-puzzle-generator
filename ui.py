@@ -1,6 +1,5 @@
 import streamlit as st
 import json
-import subprocess
 import sys
 from pathlib import Path
 import base64
@@ -9,22 +8,16 @@ from config.config_loader import Config
 from auth import Auth, show_auth_page
 from user_preferences import UserPreferences
 
-
-
+# CRITICAL FIX: Import PDF generation directly instead of subprocess
+from src.generate_book import generate_pdf
 
 # Ensure folders exist
 Path("images").mkdir(exist_ok=True)
 Path("fonts").mkdir(exist_ok=True)
 Path("user_data/preferences").mkdir(parents=True, exist_ok=True)
 
-
-
-
 # Page config
 st.set_page_config(page_title="Word Search PDF Generator", layout="wide", page_icon="🔍")
-
-
-
 
 # Initialize session state
 if 'logged_in' not in st.session_state:
@@ -34,24 +27,15 @@ if 'user_email' not in st.session_state:
 if 'user_name' not in st.session_state:
     st.session_state.user_name = None
 
-
-
-
 # Check if user is logged in
 auth = Auth()
 if not auth.is_logged_in():
     show_auth_page()
     st.stop()
 
-
-
-
 # User is logged in - show main app
 user = auth.get_current_user()
 user_prefs = UserPreferences(user['email'])
-
-
-
 
 # Custom CSS
 st.markdown(f"""
@@ -136,9 +120,6 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-
-
-
 # AUTO-LOAD LAST SESSION
 if 'session_loaded' not in st.session_state:
     last_session = user_prefs.load_last_session()
@@ -149,14 +130,8 @@ if 'session_loaded' not in st.session_state:
         user_prefs.load_colors_to_session()
     st.session_state.session_loaded = True
 
-
-
-
 # Load config
 config = Config("config/config.json")
-
-
-
 
 # NAVBAR - User info + Logout button
 navbar_col1, navbar_col2, navbar_col3 = st.columns([2, 1, 10])
@@ -174,17 +149,11 @@ with navbar_col3:
 
 st.markdown("---")
 
-
-
-
 # Initialize session state
 if 'last_config' not in st.session_state:
     st.session_state.last_config = None
 if 'pdf_bytes' not in st.session_state:
     st.session_state.pdf_bytes = None
-
-
-
 
 # DEFAULT VALUES
 DEFAULT_COLORS = {
@@ -200,22 +169,13 @@ DEFAULT_COLORS = {
     'highlight_color': "#7BBDE9",
 }
 
-
-
-
 # Initialize colors in session state
 for key, value in DEFAULT_COLORS.items():
     if key not in st.session_state:
         st.session_state[key] = value
 
-
-
-
 # Main layout: Left for tabs, Right for preview
 left, right = st.columns([2, 3], gap="large")
-
-
-
 
 with left:
     # EVEN SHORTER TAB NAMES - all fit on one line
@@ -228,8 +188,6 @@ with left:
         "🎨 Color",
         "🖼️ Extra"
     ])
-
-
 
     # TAB 0: Quick Controls
     with tab0:
@@ -387,8 +345,6 @@ with left:
         else:
             st.info("No saved books yet. Create and save your first book!")
 
-
-
     # TAB 1: Page Design
     with tab1:
         st.subheader("📄 Page Layout")
@@ -424,8 +380,6 @@ with left:
             page_num_height = st.slider("Box Height", 0.2, 0.6, 
                                           config.get('page_number', 'box_height'), 0.05)
             page_num_font_size = st.slider("Font Size", 12, 28, config.get('page_number', 'font_size'))
-
-
 
     # TAB 2: Typography
     with tab2:
@@ -473,8 +427,6 @@ with left:
             else:
                 font_path = config.get('general', 'font_path')
 
-
-
     # TAB 3: Word Box
     with tab3:
         st.subheader("📦 Word Box")
@@ -517,8 +469,6 @@ with left:
             min_words = st.slider("Min Words", 5, 30, 
                                   config.get('puzzle_generation', 'min_words_per_puzzle'))
 
-
-
     # TAB 4: Puzzle Grid
     with tab4:
         st.subheader("🔲 Puzzle Grid")
@@ -551,8 +501,6 @@ with left:
             st.markdown("##### Padding")
             end_padding = st.slider("End Padding", 0.0, 1.0, 
                                     config.get('solution', 'end_padding_factor'), 0.05)
-
-
 
     # TAB 5: Colors
     with tab5:
@@ -661,9 +609,6 @@ with left:
             st.session_state.grid_line_color = st.color_picker("Grid Lines", st.session_state.grid_line_color)
             st.session_state.highlight_color = st.color_picker("Highlight", st.session_state.highlight_color)
 
-
-
-
     # TAB 6: Images & Extras
     with tab6:
         st.subheader("🖼️ Images & Extras")
@@ -721,15 +666,10 @@ with left:
             max_word_length = st.slider("Max Word Length", 10, 30, 
                                          config.get('puzzle_generation', 'grid_size'))
 
-
-
 # Create config snapshot
 def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return [int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4)]
-
-
-
 
 current_config = {
     "puzzle_count": puzzle_count,
@@ -793,26 +733,21 @@ current_config = {
     "preserve_aspect": preserve_aspect,
 }
 
-
-
 # Save snapshot for book saving
 st.session_state.current_config_snapshot = current_config
-
-
-
 
 # Check for changes and regenerate
 config_changed = st.session_state.last_config != current_config
 
-
+# CRITICAL FIX: Call function directly instead of subprocess!
 if live_mode and config_changed:
     st.session_state.last_config = current_config
-    
+
     # AUTO-SAVE SESSION
     user_prefs.save_last_session(current_config)
     st.session_state.last_auto_save = time.time()
 
-    # SHOW WHAT'S HAPPENING WITH ERRORS VISIBLE
+    # SHOW WHAT'S HAPPENING
     status_container = st.empty()
     status_container.info("🔄 Starting PDF generation...")
 
@@ -886,55 +821,39 @@ if live_mode and config_changed:
         config.data['general']['output_file'] = output_file
 
         config.save()
-        status_container.info("✅ Config saved. Running generator...")
+        status_container.info("✅ Config saved. Generating PDF...")
 
-        result = subprocess.run(
-            [sys.executable, "-m", "src.generate_book"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-            encoding='utf-8',
-            errors='replace'
+        # CRITICAL FIX: Call function directly instead of subprocess!
+        pdf_path = Path(config.get('general', 'output_file'))
+        generate_pdf(
+            output=pdf_path,
+            count=puzzle_count,
+            size=grid_size,
+            seed=seed,
+            biski_path=Path(font_path) if font_path else None,
+            compact_solutions=False
         )
 
-        # SHOW ALL OUTPUT (DEBUG MODE)
-        status_container.info(f"📊 Generation completed with code: {result.returncode}")
-        
-        if result.stdout:
-            st.text_area("📤 STDOUT:", result.stdout, height=150)
-        
-        if result.stderr:
-            st.text_area("⚠️ STDERR:", result.stderr, height=150)
-
-        if result.returncode == 0:
-            pdf_path = Path(config.get('general', 'output_file'))
-
-            if pdf_path.exists():
-                with open(pdf_path, "rb") as f:
-                    st.session_state.pdf_bytes = f.read()
-                status_container.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
-            else:
-                status_container.error(f"❌ PDF not found at: {pdf_path}")
-                st.error(f"Current directory: {Path.cwd()}")
-                st.error(f"Files in directory: {list(Path.cwd().glob('*.pdf'))}")
+        if pdf_path.exists():
+            with open(pdf_path, "rb") as f:
+                st.session_state.pdf_bytes = f.read()
+            status_container.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
         else:
-            status_container.error(f"❌ Generation failed with code {result.returncode}!")
+            status_container.error(f"❌ PDF not found at: {pdf_path}")
 
     except Exception as e:
         status_container.error(f"❌ EXCEPTION: {str(e)}")
         import traceback
-        st.error("Full traceback:")
-        st.code(traceback.format_exc())
+        st.error(traceback.format_exc())
 
-
-# PDF Preview Section
+# PDF Preview Section (Cloud-compatible!)
 with right:
     st.markdown("### 📄 Live PDF Preview")
 
     if st.session_state.pdf_bytes:
         # PDF generated successfully
         st.success(f"✅ PDF Generated! ({len(st.session_state.pdf_bytes) / 1024:.1f} KB)")
-        
+
         # Show first page as image preview (works on cloud!)
         try:
             import fitz  # PyMuPDF
@@ -942,7 +861,7 @@ with right:
             first_page = pdf_document[0]
             pix = first_page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x scale
             img_bytes = pix.tobytes("png")
-            
+
             st.image(img_bytes, caption="📄 First Page Preview", use_container_width=True)
             st.info(f"📚 Showing page 1 of {len(pdf_document)}")
             pdf_document.close()
@@ -950,7 +869,7 @@ with right:
             st.warning("⚠️ PDF preview requires PyMuPDF. Download PDF to view!")
         except Exception as e:
             st.warning(f"⚠️ Preview unavailable: {str(e)}")
-        
+
         # Download button
         st.download_button(
             label="📥 Download Full PDF",
@@ -978,17 +897,15 @@ with right:
         2. ⚡ Adjust settings in **Quick** tab
         3. 🔴 Make sure **LIVE PREVIEW** is ON
         4. 🔄 Click **Regenerate** to force generation
-        
+
         **Or just change any setting and it will auto-generate!** ✨
         """)
-        
+
         # Show a placeholder
         st.image("https://via.placeholder.com/400x600/667eea/ffffff?text=PDF+Preview+Here", 
                  caption="Waiting for PDF generation...", use_container_width=True)
-
 
 # Footer
 st.markdown("---")
 st.caption("💡 **Pro Tip:** Use '♻️ Reset All' to restore defaults • Toggle LIVE MODE off to batch changes")
 st.caption("Made with 🔥 for Word Search Puzzles")
-    
